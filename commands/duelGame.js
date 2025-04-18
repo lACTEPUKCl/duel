@@ -157,6 +157,13 @@ export async function handleDuelAccept(interaction) {
     const duelsColl = db.collection("duels");
     const interactionId = interaction.customId.split("_").slice(2).join("_");
     const duel = await duelModel.findPendingDuelByInteractionId(interactionId);
+
+    await duelsColl.updateOne(
+      { _id: duel._id },
+      { $set: { opponentId: interaction.user.id } }
+    );
+    duel.opponentId = interaction.user.id;
+
     const [challengerData, opponentData] = await Promise.all([
       statsColl.findOne({ discordid: duel.challengerId }),
       statsColl.findOne({ discordid: duel.opponentId }),
@@ -205,11 +212,6 @@ export async function handleDuelAccept(interaction) {
       );
       await interaction.message.edit({ components: disabled });
       await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-      await duelsColl.updateOne(
-        { _id: duel._id },
-        { $set: { opponentId: interaction.user.id } }
-      );
-      duel.opponentId = interaction.user.id;
     }
 
     challengerData.nickname =
@@ -286,7 +288,7 @@ export async function handleDuelAccept(interaction) {
         value: `${duel.betAmount} бонусов`,
         inline: true,
       });
-    await interaction.followUp({ embeds: [embed] });
+    await interaction.reply({ embeds: [embed] });
 
     interaction.guild.members
       .fetch(loserId)
@@ -294,7 +296,7 @@ export async function handleDuelAccept(interaction) {
       .catch(() => {});
   } catch (err) {
     console.error("Ошибка при обработке дуэли:", err);
-    await interaction.editReply({
+    await interaction.reply({
       content: "❌ Произошла ошибка при обработке дуэли",
       flags: MessageFlags.Ephemeral,
     });
