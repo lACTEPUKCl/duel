@@ -42,7 +42,8 @@ export async function execute(interaction) {
       {
         $set: {
           "duelGame.stats": defaultStats,
-          "duelGame.unspentPoints": unspentPoints,
+          "duelGame.unspentPoints":
+            (userDoc.duelGame.unspentPoints || 0) + level * 5,
         },
       }
     );
