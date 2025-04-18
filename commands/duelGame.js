@@ -180,20 +180,6 @@ export async function handleDuelAccept(interaction) {
       });
     }
 
-    if (!challengerData?.duelGame) {
-      return interaction.editReply({
-        content:
-          "❌ Инициатор дуэли ещё не создал персонажа. Пусть выполнит `/createcharacter`.",
-        flags: MessageFlags.Ephemeral,
-      });
-    }
-    if (!opponentData?.duelGame) {
-      return interaction.editReply({
-        content:
-          "❌ Противник ещё не создал персонажа. Он должен выполнить `/createcharacter`.",
-        flags: MessageFlags.Ephemeral,
-      });
-    }
     if (!duel.opponentId) {
       const oppData = await statsColl.findOne({
         discordid: interaction.user.id,
