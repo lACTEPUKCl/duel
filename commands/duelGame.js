@@ -155,12 +155,12 @@ export async function handleDuelAccept(interaction) {
     const db = duelModel.client.db("SquadJS");
     const statsColl = db.collection("mainstats");
     const duelsColl = db.collection("duels");
+    const duel = await duelModel.findPendingDuelByInteractionId(interactionId);
     const [challengerData, opponentData] = await Promise.all([
       statsColl.findOne({ discordid: duel.challengerId }),
       statsColl.findOne({ discordid: duel.opponentId }),
     ]);
     const interactionId = interaction.customId.split("_").slice(2).join("_");
-    const duel = await duelModel.findPendingDuelByInteractionId(interactionId);
     if (!duel) {
       return interaction.editReply({
         content: "❌ Дуэль не найдена или уже завершена!",
