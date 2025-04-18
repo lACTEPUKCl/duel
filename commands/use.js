@@ -24,8 +24,8 @@ export const data = new SlashCommandBuilder()
       .setDescription("Выберите действие или тип предмета")
       .setRequired(true)
       .addChoices(
-        { name: getItemName("potion_damage"), value: "potion_damage" },
-        { name: getItemName("potion_defense"), value: "potion_defense" },
+        { name: "Зелье урона", value: "potion_damage" },
+        { name: "Зелье защиты", value: "potion_defense" },
         { name: "Экипировать оружие", value: "weapon" },
         { name: "Экипировать броню", value: "armor" }
       )
