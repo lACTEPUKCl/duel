@@ -1,0 +1,535 @@
+{
+  "quests": [
+    {
+      "id": "easy_quest_1",
+      "description": "Лёгкое задание: помогите сельчанам собрать урожай.",
+      "duration": 7200000,
+      "chance": 0.8,
+      "success": {
+        "xp": 75,
+        "bonus": 200,
+        "loot": [
+          { "id": "potion_damage", "name": "Зелье урона", "chance": 0.8 },
+          { "id": "potion_defense", "name": "Зелье защиты", "chance": 0.8 },
+          {
+            "id": "weapon_epic",
+            "name": "Эпическое оружие",
+            "enhance": 0,
+            "stats": {
+              "damagePercentBonus": 0.5,
+              "accuracyBonus": 0.2,
+              "critChanceBonus": 0.1
+            },
+            "chance": 0.1
+          },
+          {
+            "id": "armor_epic",
+            "name": "Эпическая броня",
+            "enhance": 0,
+            "stats": {
+              "defensePercentBonus": 0.3
+            },
+            "chance": 0.1
+          },
+          {
+            "id": "weapon_legendary",
+            "name": "Легендарное оружие",
+            "enhance": 0,
+            "stats": {
+              "damagePercentBonus": 1.0,
+              "accuracyBonus": 0.5,
+              "critChanceBonus": 0.2
+            },
+            "chance": 0.05
+          },
+          {
+            "id": "armor_legendary",
+            "name": "Легендарная броня",
+            "enhance": 0,
+            "stats": {
+              "defensePercentBonus": 0.5
+            },
+            "chance": 0.05
+          }
+        ]
+      },
+      "failure": {
+        "xp": 20,
+        "bonus": -100,
+        "loot": []
+      }
+    },
+    {
+      "id": "easy_quest_2",
+      "description": "Лёгкое задание: найдите потерянную монету в деревне.",
+      "duration": 7200000,
+      "chance": 0.8,
+      "success": {
+        "xp": 75,
+        "bonus": 200,
+        "loot": [
+          { "id": "potion_damage", "name": "Зелье урона", "chance": 0.8 },
+          { "id": "potion_defense", "name": "Зелье защиты", "chance": 0.8 },
+          {
+            "id": "weapon_epic",
+            "name": "Эпическое оружие",
+            "enhance": 0,
+            "stats": {
+              "damagePercentBonus": 0.5,
+              "accuracyBonus": 0.2,
+              "critChanceBonus": 0.1
+            },
+            "chance": 0.1
+          },
+          {
+            "id": "armor_epic",
+            "name": "Эпическая броня",
+            "enhance": 0,
+            "stats": {
+              "defensePercentBonus": 0.3
+            },
+            "chance": 0.1
+          },
+          {
+            "id": "weapon_legendary",
+            "name": "Легендарное оружие",
+            "enhance": 0,
+            "stats": {
+              "damagePercentBonus": 1.0,
+              "accuracyBonus": 0.5,
+              "critChanceBonus": 0.2
+            },
+            "chance": 0.05
+          },
+          {
+            "id": "armor_legendary",
+            "name": "Легендарная броня",
+            "enhance": 0,
+            "stats": {
+              "defensePercentBonus": 0.5
+            },
+            "chance": 0.05
+          }
+        ]
+      },
+      "failure": {
+        "xp": 20,
+        "bonus": -100,
+        "loot": []
+      }
+    },
+    {
+      "id": "easy_quest_3",
+      "description": "Лёгкое задание: проведите уборку на местном рынке.",
+      "duration": 7200000,
+      "chance": 0.8,
+      "success": {
+        "xp": 75,
+        "bonus": 200,
+        "loot": [
+          { "id": "potion_damage", "name": "Зелье урона", "chance": 0.8 },
+          { "id": "potion_defense", "name": "Зелье защиты", "chance": 0.8 },
+          {
+            "id": "weapon_epic",
+            "name": "Эпическое оружие",
+            "enhance": 0,
+            "stats": {
+              "damagePercentBonus": 0.5,
+              "accuracyBonus": 0.2,
+              "critChanceBonus": 0.1
+            },
+            "chance": 0.1
+          },
+          {
+            "id": "armor_epic",
+            "name": "Эпическая броня",
+            "enhance": 0,
+            "stats": {
+              "defensePercentBonus": 0.3
+            },
+            "chance": 0.1
+          },
+          {
+            "id": "weapon_legendary",
+            "name": "Легендарное оружие",
+            "enhance": 0,
+            "stats": {
+              "damagePercentBonus": 1.0,
+              "accuracyBonus": 0.5,
+              "critChanceBonus": 0.2
+            },
+            "chance": 0.05
+          },
+          {
+            "id": "armor_legendary",
+            "name": "Легендарная броня",
+            "enhance": 0,
+            "stats": {
+              "defensePercentBonus": 0.5
+            },
+            "chance": 0.05
+          }
+        ]
+      },
+      "failure": {
+        "xp": 20,
+        "bonus": -100,
+        "loot": []
+      }
+    },
+    {
+      "id": "medium_quest_1",
+      "description": "Среднее задание: исследуйте руины старого замка.",
+      "duration": 18000000,
+      "chance": 0.6,
+      "success": {
+        "xp": 150,
+        "bonus": 500,
+        "loot": [
+          { "id": "potion_damage", "name": "Зелье урона", "chance": 0.7 },
+          { "id": "potion_defense", "name": "Зелье защиты", "chance": 0.7 },
+          {
+            "id": "weapon_epic",
+            "name": "Эпическое оружие",
+            "enhance": 0,
+            "stats": {
+              "damagePercentBonus": 0.5,
+              "accuracyBonus": 0.2,
+              "critChanceBonus": 0.1
+            },
+            "chance": 0.1
+          },
+          {
+            "id": "armor_epic",
+            "name": "Эпическая броня",
+            "enhance": 0,
+            "stats": {
+              "defensePercentBonus": 0.3
+            },
+            "chance": 0.1
+          },
+          {
+            "id": "weapon_legendary",
+            "name": "Легендарное оружие",
+            "enhance": 0,
+            "stats": {
+              "damagePercentBonus": 1.0,
+              "accuracyBonus": 0.5,
+              "critChanceBonus": 0.2
+            },
+            "chance": 0.05
+          },
+          {
+            "id": "armor_legendary",
+            "name": "Легендарная броня",
+            "enhance": 0,
+            "stats": {
+              "defensePercentBonus": 0.5
+            },
+            "chance": 0.05
+          }
+        ]
+      },
+      "failure": {
+        "xp": 50,
+        "bonus": -250,
+        "loot": []
+      }
+    },
+    {
+      "id": "medium_quest_2",
+      "description": "Среднее задание: спасите заблудившихся путников в лесу.",
+      "duration": 18000000,
+      "chance": 0.6,
+      "success": {
+        "xp": 150,
+        "bonus": 500,
+        "loot": [
+          { "id": "potion_damage", "name": "Зелье урона", "chance": 0.7 },
+          { "id": "potion_defense", "name": "Зелье защиты", "chance": 0.7 },
+          {
+            "id": "weapon_epic",
+            "name": "Эпическое оружие",
+            "enhance": 0,
+            "stats": {
+              "damagePercentBonus": 0.5,
+              "accuracyBonus": 0.2,
+              "critChanceBonus": 0.1
+            },
+            "chance": 0.1
+          },
+          {
+            "id": "armor_epic",
+            "name": "Эпическая броня",
+            "enhance": 0,
+            "stats": {
+              "defensePercentBonus": 0.3
+            },
+            "chance": 0.1
+          },
+          {
+            "id": "weapon_legendary",
+            "name": "Легендарное оружие",
+            "enhance": 0,
+            "stats": {
+              "damagePercentBonus": 1.0,
+              "accuracyBonus": 0.5,
+              "critChanceBonus": 0.2
+            },
+            "chance": 0.05
+          },
+          {
+            "id": "armor_legendary",
+            "name": "Легендарная броня",
+            "enhance": 0,
+            "stats": {
+              "defensePercentBonus": 0.5
+            },
+            "chance": 0.05
+          }
+        ]
+      },
+      "failure": {
+        "xp": 50,
+        "bonus": -250,
+        "loot": []
+      }
+    },
+    {
+      "id": "medium_quest_3",
+      "description": "Среднее задание: найдите древнюю реликвию в заброшенном храме.",
+      "duration": 18000000,
+      "chance": 0.6,
+      "success": {
+        "xp": 150,
+        "bonus": 500,
+        "loot": [
+          { "id": "potion_damage", "name": "Зелье урона", "chance": 0.7 },
+          { "id": "potion_defense", "name": "Зелье защиты", "chance": 0.7 },
+          {
+            "id": "weapon_epic",
+            "name": "Эпическое оружие",
+            "enhance": 0,
+            "stats": {
+              "damagePercentBonus": 0.5,
+              "accuracyBonus": 0.2,
+              "critChanceBonus": 0.1
+            },
+            "chance": 0.1
+          },
+          {
+            "id": "armor_epic",
+            "name": "Эпическая броня",
+            "enhance": 0,
+            "stats": {
+              "defensePercentBonus": 0.3
+            },
+            "chance": 0.1
+          },
+          {
+            "id": "weapon_legendary",
+            "name": "Легендарное оружие",
+            "enhance": 0,
+            "stats": {
+              "damagePercentBonus": 1.0,
+              "accuracyBonus": 0.5,
+              "critChanceBonus": 0.2
+            },
+            "chance": 0.05
+          },
+          {
+            "id": "armor_legendary",
+            "name": "Легендарная броня",
+            "enhance": 0,
+            "stats": {
+              "defensePercentBonus": 0.5
+            },
+            "chance": 0.05
+          }
+        ]
+      },
+      "failure": {
+        "xp": 50,
+        "bonus": -250,
+        "loot": []
+      }
+    },
+    {
+      "id": "hard_quest_1",
+      "description": "Сложное задание: проникните в крепость враждебного короля.",
+      "duration": 36000000,
+      "chance": 0.4,
+      "success": {
+        "xp": 300,
+        "bonus": 1000,
+        "loot": [
+          { "id": "potion_damage", "name": "Зелье урона", "chance": 0.6 },
+          { "id": "potion_defense", "name": "Зелье защиты", "chance": 0.6 },
+          {
+            "id": "weapon_epic",
+            "name": "Эпическое оружие",
+            "enhance": 0,
+            "stats": {
+              "damagePercentBonus": 0.5,
+              "accuracyBonus": 0.2,
+              "critChanceBonus": 0.1
+            },
+            "chance": 0.1
+          },
+          {
+            "id": "armor_epic",
+            "name": "Эпическая броня",
+            "enhance": 0,
+            "stats": {
+              "defensePercentBonus": 0.3
+            },
+            "chance": 0.1
+          },
+          {
+            "id": "weapon_legendary",
+            "name": "Легендарное оружие",
+            "enhance": 0,
+            "stats": {
+              "damagePercentBonus": 1.0,
+              "accuracyBonus": 0.5,
+              "critChanceBonus": 0.2
+            },
+            "chance": 0.05
+          },
+          {
+            "id": "armor_legendary",
+            "name": "Легендарная броня",
+            "enhance": 0,
+            "stats": {
+              "defensePercentBonus": 0.5
+            },
+            "chance": 0.05
+          }
+        ]
+      },
+      "failure": {
+        "xp": 100,
+        "bonus": -500,
+        "loot": []
+      }
+    },
+    {
+      "id": "hard_quest_2",
+      "description": "Сложное задание: отправьтесь на опасную экспедицию в далекие земли.",
+      "duration": 36000000,
+      "chance": 0.4,
+      "success": {
+        "xp": 300,
+        "bonus": 1000,
+        "loot": [
+          { "id": "potion_damage", "name": "Зелье урона", "chance": 0.6 },
+          { "id": "potion_defense", "name": "Зелье защиты", "chance": 0.6 },
+          {
+            "id": "weapon_epic",
+            "name": "Эпическое оружие",
+            "enhance": 0,
+            "stats": {
+              "damagePercentBonus": 0.5,
+              "accuracyBonus": 0.2,
+              "critChanceBonus": 0.1
+            },
+            "chance": 0.1
+          },
+          {
+            "id": "armor_epic",
+            "name": "Эпическая броня",
+            "enhance": 0,
+            "stats": {
+              "defensePercentBonus": 0.3
+            },
+            "chance": 0.1
+          },
+          {
+            "id": "weapon_legendary",
+            "name": "Легендарное оружие",
+            "enhance": 0,
+            "stats": {
+              "damagePercentBonus": 1.0,
+              "accuracyBonus": 0.5,
+              "critChanceBonus": 0.2
+            },
+            "chance": 0.05
+          },
+          {
+            "id": "armor_legendary",
+            "name": "Легендарная броня",
+            "enhance": 0,
+            "stats": {
+              "defensePercentBonus": 0.5
+            },
+            "chance": 0.05
+          }
+        ]
+      },
+      "failure": {
+        "xp": 100,
+        "bonus": -500,
+        "loot": []
+      }
+    },
+    {
+      "id": "hard_quest_3",
+      "description": "Сложное задание: победите легендарное чудовище в глубинах пещеры.",
+      "duration": 36000000,
+      "chance": 0.4,
+      "success": {
+        "xp": 300,
+        "bonus": 1000,
+        "loot": [
+          { "id": "potion_damage", "name": "Зелье урона", "chance": 0.6 },
+          { "id": "potion_defense", "name": "Зелье защиты", "chance": 0.6 },
+          {
+            "id": "weapon_epic",
+            "name": "Эпическое оружие",
+            "enhance": 0,
+            "stats": {
+              "damagePercentBonus": 0.5,
+              "accuracyBonus": 0.2,
+              "critChanceBonus": 0.1
+            },
+            "chance": 0.1
+          },
+          {
+            "id": "armor_epic",
+            "name": "Эпическая броня",
+            "enhance": 0,
+            "stats": {
+              "defensePercentBonus": 0.3
+            },
+            "chance": 0.1
+          },
+          {
+            "id": "weapon_legendary",
+            "name": "Легендарное оружие",
+            "enhance": 0,
+            "stats": {
+              "damagePercentBonus": 1.0,
+              "accuracyBonus": 0.5,
+              "critChanceBonus": 0.2
+            },
+            "chance": 0.05
+          },
+          {
+            "id": "armor_legendary",
+            "name": "Легендарная броня",
+            "enhance": 0,
+            "stats": {
+              "defensePercentBonus": 0.5
+            },
+            "chance": 0.05
+          }
+        ]
+      },
+      "failure": {
+        "xp": 100,
+        "bonus": -500,
+        "loot": []
+      }
+    }
+  ]
+}
