@@ -57,7 +57,13 @@ export async function execute(interaction) {
     const opponentOption = interaction.options.getUser("противник");
     const opponentId = opponentOption ? opponentOption.id : null;
     const betAmount = interaction.options.getInteger("ставка") || 0;
-
+    const ALLOWED_CHANNEL = "1362879255293333524";
+    if (interaction.channel.id !== ALLOWED_CHANNEL) {
+      return interaction.reply({
+        content: `❌ Эту команду можно использовать только в канале <#${ALLOWED_CHANNEL}>.`,
+        flags: MessageFlags.Ephemeral,
+      });
+    }
     if (opponentOption) {
       if (opponentOption.bot) {
         return interaction.reply({
