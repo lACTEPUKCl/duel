@@ -99,6 +99,15 @@ export async function execute(interaction) {
     await duelModel.connect();
     const statsColl = duelModel.client.db("SquadJS").collection("mainstats");
     const challengerData = await statsColl.findOne({ discordid: challengerId });
+
+    if (!challengerData?.duelGame) {
+      return interaction.reply({
+        content:
+          "❌ У вас нет созданного персонажа. Используйте команду `/createcharacter`, чтобы создать своего героя.",
+        flags: MessageFlags.Ephemeral,
+      });
+    }
+
     const duelStats = challengerData.duelGame.stats || {};
     const strength = getEffectiveStat(duelStats, "strength");
     const agility = getEffectiveStat(duelStats, "agility");
