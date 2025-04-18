@@ -78,7 +78,7 @@ function getTotalDefense(character) {
   return getEffectiveStat(character, "defense");
 }
 
-async function simulateDuel(challenger, opponent) {
+async function simulateDuel(challenger, opponent, interaction) {
   await duelModel.connect();
   const statsColl = duelModel.client.db("SquadJS").collection("mainstats");
 
@@ -87,8 +87,33 @@ async function simulateDuel(challenger, opponent) {
   const firstC = Math.random() < 0.5;
   const log = [];
   let rnd = 1;
-  const nameC = (challenger.nickname || challenger.discordid).slice(0, 14);
-  const nameO = (opponent.nickname || opponent.discordid).slice(0, 14);
+
+  const getDisplayName = async (userId, interaction) => {
+    try {
+      const member = await interaction.guild.members.fetch(userId);
+      if (member.nickname) return member.nickname.slice(0, 14);
+      if (member.user.globalName) return member.user.globalName.slice(0, 14);
+      if (member.user.username) return member.user.username.slice(0, 14);
+      return userId.slice(0, 14);
+    } catch (error) {
+      console.error(`Ошибка получения данных пользователя ${userId}:`, error);
+
+      try {
+        const user = await interaction.client.users.fetch(userId);
+        if (user.globalName) return user.globalName.slice(0, 14);
+        if (user.username) return user.username.slice(0, 14);
+      } catch (e) {
+        console.error(`Ошибка получения данных через REST API ${userId}:`, e);
+      }
+
+      return userId.slice(0, 14);
+    }
+  };
+
+  const [nameC, nameO] = await Promise.all([
+    getDisplayName(challenger.discordid, interaction),
+    getDisplayName(opponent.discordid, interaction),
+  ]);
 
   log.push("Раунд |   Атакующий    | Урон  |    Защитник    |   HP");
   log.push("-".repeat(56));
@@ -128,6 +153,7 @@ async function simulateDuel(challenger, opponent) {
     );
     rnd++;
   }
+
   [challenger, opponent].forEach((c) => {
     const effs = c.duelGame.activeEffects || {};
     for (const e in effs) {
@@ -135,6 +161,7 @@ async function simulateDuel(challenger, opponent) {
       if (effs[e].remaining <= 0) delete effs[e];
     }
   });
+
   await statsColl.updateOne(
     { discordid: challenger.discordid },
     { $set: { "duelGame.activeEffects": challenger.duelGame.activeEffects } }
@@ -155,75 +182,126 @@ export async function handleDuelAccept(interaction) {
     const db = duelModel.client.db("SquadJS");
     const statsColl = db.collection("mainstats");
     const duelsColl = db.collection("duels");
+
+    // 1. Получаем дуэль
     const interactionId = interaction.customId.split("_").slice(2).join("_");
     const duel = await duelModel.findPendingDuelByInteractionId(interactionId);
 
-    await duelsColl.updateOne(
-      { _id: duel._id },
-      { $set: { opponentId: interaction.user.id } }
-    );
-    duel.opponentId = interaction.user.id;
-
-    const [challengerData, opponentData] = await Promise.all([
-      statsColl.findOne({ discordid: duel.challengerId }),
-      statsColl.findOne({ discordid: duel.opponentId }),
-    ]);
-
+    // 2. Проверяем существование дуэли
     if (!duel) {
       return interaction.reply({
         content: "❌ Дуэль не найдена или уже завершена!",
         flags: MessageFlags.Ephemeral,
       });
     }
-    if (duel.opponentId && interaction.user.id !== duel.opponentId) {
-      return interaction.reply({
-        content: "❌ Эта кнопка активна только для указанного оппонента.",
-        flags: MessageFlags.Ephemeral,
-      });
-    }
+
+    // 3. Проверяем, не является ли пользователь создателем дуэли
     if (duel.challengerId === interaction.user.id) {
       return interaction.reply({
-        content: "❌ Вы не можете принять свою собственную дуэль.",
+        content: "❌ Вы не можете принять свою дуэль!",
         flags: MessageFlags.Ephemeral,
       });
     }
 
-    if (!duel.opponentId) {
-      const oppData = await statsColl.findOne({
-        discordid: interaction.user.id,
-      });
-      if (!oppData?.duelGame) {
+    // 4. Если дуэль уже имеет оппонента
+    if (duel.opponentId) {
+      if (duel.opponentId.toString() !== interaction.user.id.toString()) {
         return interaction.reply({
-          content: "❌ Для участия создайте персонажа (/createcharacter).",
+          content: "❌ Дуэль уже принята другим игроком!",
           flags: MessageFlags.Ephemeral,
         });
       }
-      if (duel.betAmount > 0 && (oppData.bonuses || 0) < duel.betAmount) {
-        return interaction.reply({
-          content: `❌ Недостаточно бонусов! У вас ${oppData.bonuses || 0}`,
-          flags: MessageFlags.Ephemeral,
-        });
-      }
-
-      const disabled = interaction.message.components.map((row) =>
-        new ActionRowBuilder().addComponents(
-          row.components.map((btn) => ButtonBuilder.from(btn).setDisabled(true))
-        )
-      );
-      await interaction.message.edit({ components: disabled });
-      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+      // Продолжаем обработку, если это тот же пользователь
     }
 
-    challengerData.nickname =
-      interaction.guild.members.cache.get(challengerData.discordid)
-        ?.displayName || challengerData.discordid;
-    opponentData.nickname =
-      interaction.guild.members.cache.get(opponentData.discordid)
-        ?.displayName || opponentData.discordid;
+    // 5. Проверяем данные оппонента ДО установки
+    const oppData = await statsColl.findOne({
+      discordid: interaction.user.id,
+    });
+
+    if (!oppData?.duelGame) {
+      return interaction.reply({
+        content: "❌ Сначала создайте персонажа (/createcharacter)!",
+        flags: MessageFlags.Ephemeral,
+      });
+    }
+
+    if (duel.betAmount > 0 && (oppData.bonuses || 0) < duel.betAmount) {
+      return interaction.reply({
+        content: `❌ Недостаточно бонусов! Нужно: ${duel.betAmount}`,
+        flags: MessageFlags.Ephemeral,
+      });
+    }
+
+    // 6. Атомарная установка оппонента с полной проверкой
+    const currentUserId = interaction.user.id;
+    const updateResult = await duelsColl.updateOne(
+      {
+        _id: duel._id,
+        $or: [
+          { opponentId: { $exists: false } }, // Если оппонента нет
+          { opponentId: currentUserId }, // Или если оппонент - текущий пользователь
+        ],
+      },
+      {
+        $set: {
+          opponentId: String(currentUserId), // Явное преобразование в строку
+          updatedAt: new Date(),
+        },
+      }
+    );
+
+    // // Проверяем результат
+    // if (updateResult.modifiedCount === 0) {
+    //   // Получаем актуальные данные для диагностики
+    //   const currentDuelState = await duelsColl.findOne({ _id: duel._id });
+
+    //   console.log("Конфликт при принятии дуэли:", {
+    //     duelId: duel._id,
+    //     currentOpponent: currentDuelState?.opponentId,
+    //     attemptingUser: currentUserId,
+    //     duelState: currentDuelState,
+    //   });
+
+    //   return interaction.reply({
+    //     content: "❌ Дуэль уже принята другим игроком!",
+    //     flags: MessageFlags.Ephemeral,
+    //   });
+    // }
+
+    // Обязательно обновляем локальный объект
+    duel.opponentId = currentUserId;
+
+    // 7. Обновляем сообщение
+    const disabled = interaction.message.components.map((row) =>
+      new ActionRowBuilder().addComponents(
+        row.components.map((btn) => ButtonBuilder.from(btn).setDisabled(true))
+      )
+    );
+    await interaction.message.edit({ components: disabled });
+    await interaction.deferReply({});
+
+    // 8. Получаем полные данные участников
+    const [challengerData, opponentData] = await Promise.all([
+      statsColl.findOne({ discordid: duel.challengerId }),
+      statsColl.findOne({ discordid: duel.opponentId }),
+    ]);
+
+    if (!challengerData?.duelGame || !opponentData?.duelGame) {
+      return interaction.reply({
+        content: "❌ Ошибка загрузки данных персонажей!",
+        flags: MessageFlags.Ephemeral,
+      });
+    }
+
+    // 10. Симулируем дуэль
     const { winnerId, loserId, battleLog } = await simulateDuel(
       challengerData,
-      opponentData
+      opponentData,
+      interaction
     );
+
+    // 9. Формируем описание результата
     let description = "```md\n" + battleLog.join("\n") + "\n```";
 
     const winData =
@@ -243,12 +321,16 @@ export async function handleDuelAccept(interaction) {
       ];
     description += `\n\nИтог: <@${winnerId}> ${winPhrase} <@${loserId}>, ${deathPhrase}.`;
 
+    // 10. Удаляем оригинальное сообщение с вызовом
     try {
       await interaction.channel.messages
         .fetch(duel.messageId)
         .then((m) => m.delete());
     } catch {}
+
+    // 11. Обновляем данные о дуэли и статистику игроков
     await duelModel.completeDuel(duel._id, winnerId, { battleLog });
+
     await statsColl.updateOne(
       { discordid: winnerId },
       {
@@ -258,6 +340,7 @@ export async function handleDuelAccept(interaction) {
         },
       }
     );
+
     await statsColl.updateOne(
       { discordid: loserId },
       {
@@ -268,8 +351,11 @@ export async function handleDuelAccept(interaction) {
       }
     );
 
+    // 12. Награждаем опытом
     await awardXP(winnerId, 100);
     await awardXP(loserId, 30);
+
+    // 13. Создаем embed с результатами
     const embed = new EmbedBuilder()
       .setColor(winnerId === interaction.user.id ? 0x00ff00 : 0xff0000)
       .setTitle(
@@ -282,21 +368,26 @@ export async function handleDuelAccept(interaction) {
         { name: "Победитель", value: `<@${winnerId}>`, inline: true },
         { name: "Проигравший", value: `<@${loserId}>`, inline: true }
       );
-    if (duel.betAmount > 0)
+
+    if (duel.betAmount > 0) {
       embed.addFields({
         name: "Выигрыш",
         value: `${duel.betAmount} бонусов`,
         inline: true,
       });
-    await interaction.reply({ embeds: [embed] });
+    }
 
+    // 14. Отправляем результат
+    await interaction.editReply({ embeds: [embed] });
+
+    // 15. Таймаут для проигравшего
     interaction.guild.members
       .fetch(loserId)
       .then((m) => m.timeout(5 * 60 * 1000, "Поражение в дуэли"))
       .catch(() => {});
   } catch (err) {
     console.error("Ошибка при обработке дуэли:", err);
-    await interaction.reply({
+    await interaction.editReply({
       content: "❌ Произошла ошибка при обработке дуэли",
       flags: MessageFlags.Ephemeral,
     });
