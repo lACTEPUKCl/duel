@@ -155,7 +155,10 @@ export async function handleDuelAccept(interaction) {
     const db = duelModel.client.db("SquadJS");
     const statsColl = db.collection("mainstats");
     const duelsColl = db.collection("duels");
-
+    const [challengerData, opponentData] = await Promise.all([
+      statsColl.findOne({ discordid: duel.challengerId }),
+      statsColl.findOne({ discordid: duel.opponentId }),
+    ]);
     const interactionId = interaction.customId.split("_").slice(2).join("_");
     const duel = await duelModel.findPendingDuelByInteractionId(interactionId);
     if (!duel) {
@@ -177,14 +180,20 @@ export async function handleDuelAccept(interaction) {
       });
     }
 
-    const disabled = interaction.message.components.map((row) =>
-      new ActionRowBuilder().addComponents(
-        row.components.map((btn) => ButtonBuilder.from(btn).setDisabled(true))
-      )
-    );
-    await interaction.message.edit({ components: disabled });
-    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-
+    if (!challengerData?.duelGame) {
+      return interaction.editReply({
+        content:
+          "❌ Инициатор дуэли ещё не создал персонажа. Пусть выполнит `/createcharacter`.",
+        flags: MessageFlags.Ephemeral,
+      });
+    }
+    if (!opponentData?.duelGame) {
+      return interaction.editReply({
+        content:
+          "❌ Противник ещё не создал персонажа. Он должен выполнить `/createcharacter`.",
+        flags: MessageFlags.Ephemeral,
+      });
+    }
     if (!duel.opponentId) {
       const oppData = await statsColl.findOne({
         discordid: interaction.user.id,
@@ -201,17 +210,20 @@ export async function handleDuelAccept(interaction) {
           flags: MessageFlags.Ephemeral,
         });
       }
+
+      const disabled = interaction.message.components.map((row) =>
+        new ActionRowBuilder().addComponents(
+          row.components.map((btn) => ButtonBuilder.from(btn).setDisabled(true))
+        )
+      );
+      await interaction.message.edit({ components: disabled });
+      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
       await duelsColl.updateOne(
         { _id: duel._id },
         { $set: { opponentId: interaction.user.id } }
       );
       duel.opponentId = interaction.user.id;
     }
-
-    const [challengerData, opponentData] = await Promise.all([
-      statsColl.findOne({ discordid: duel.challengerId }),
-      statsColl.findOne({ discordid: duel.opponentId }),
-    ]);
 
     challengerData.nickname =
       interaction.guild.members.cache.get(challengerData.discordid)
