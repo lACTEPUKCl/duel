@@ -1,11 +1,8 @@
 FROM node:18.18.2
 
+COPY . /app
+
 WORKDIR /app
+RUN npm install
+CMD [ "node", "index.js" ]
 
-COPY package.json ./
-
-COPY src ./src
-
-WORKDIR /app/src
-
-CMD ["node", "index.js"]
