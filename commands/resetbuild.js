@@ -5,7 +5,7 @@ import { checkUserBinding } from "../utils/checkUserBinding.js";
 export const data = new SlashCommandBuilder()
   .setName("resetbuild")
   .setDescription(
-    "Сбросьте распределенные очки для перераспределения характеристик"
+    "Сбросьте распределенные очки, очки для распределения будут равны уровень × 5"
   );
 
 export async function execute(interaction) {
@@ -23,6 +23,8 @@ export async function execute(interaction) {
       });
     }
 
+    const level = userDoc.duelGame.level || 1;
+
     const defaultStats = {
       strength: 10,
       agility: 10,
@@ -33,35 +35,20 @@ export async function execute(interaction) {
       class: "novice",
     };
 
-    const cur = userDoc.duelGame.stats;
-    const statFields = [
-      "strength",
-      "agility",
-      "intelligence",
-      "accuracy",
-      "hp",
-      "defense",
-    ];
-    const usedPoints = statFields.reduce((sum, field) => {
-      const curVal = cur[field] || 0;
-      const defVal = defaultStats[field];
-      return sum + Math.max(0, curVal - defVal);
-    }, 0);
-
-    const newUnspent = usedPoints;
+    const unspentPoints = level * 5;
 
     await statsColl.updateOne(
       { discordid: interaction.user.id },
       {
         $set: {
           "duelGame.stats": defaultStats,
-          "duelGame.unspentPoints": newUnspent,
+          "duelGame.unspentPoints": unspentPoints,
         },
       }
     );
 
     return interaction.reply({
-      content: `✅ Ваш билд сброшен. Возвращено ${usedPoints} очков для перераспределения.`,
+      content: `✅ Ваш билд сброшен. У вас теперь ${unspentPoints} очков для распределения.`,
       flags: MessageFlags.Ephemeral,
     });
   } catch (err) {
