@@ -28,11 +28,27 @@ export const gameItems = [
     canBeSold: true,
   },
   {
+    id: "potion_defence",
+    name: "Зелье защиты",
+    description: "Зелье, повышающее защиту на 10% на 5 дуэлей.",
+    price: 500,
+    stats: "Защита +10% (5 дуэлей)",
+    canBeSold: true,
+  },
+  {
     id: "scroll_weapon",
     name: "Заточка оружия",
     description: "Свиток для улучшения оружия. Риск разрушения!",
     price: 700,
     stats: "Шанс улучшить оружие (+1)",
+    canBeSold: true,
+  },
+  {
+    id: "scroll_armor",
+    name: "Усиление брони",
+    description: "Свиток для усиления брони. Риск разрушения!",
+    price: 700,
+    stats: "Шанс усилить броню (+1)",
     canBeSold: true,
   },
   {
