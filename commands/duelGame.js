@@ -163,7 +163,7 @@ export async function handleDuelAccept(interaction) {
     ]);
 
     if (!duel) {
-      return interaction.editReply({
+      return interaction.reply({
         content: "❌ Дуэль не найдена или уже завершена!",
         flags: MessageFlags.Ephemeral,
       });
@@ -186,13 +186,13 @@ export async function handleDuelAccept(interaction) {
         discordid: interaction.user.id,
       });
       if (!oppData?.duelGame) {
-        return interaction.editReply({
+        return interaction.reply({
           content: "❌ Для участия создайте персонажа (/createcharacter).",
           flags: MessageFlags.Ephemeral,
         });
       }
       if (duel.betAmount > 0 && (oppData.bonuses || 0) < duel.betAmount) {
-        return interaction.editReply({
+        return interaction.reply({
           content: `❌ Недостаточно бонусов! У вас ${oppData.bonuses || 0}`,
           flags: MessageFlags.Ephemeral,
         });
