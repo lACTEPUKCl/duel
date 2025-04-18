@@ -33,15 +33,22 @@ export async function execute(interaction) {
       class: "novice",
     };
 
-    let usedPoints = 0;
     const cur = userDoc.duelGame.stats;
-    usedPoints += (cur.strength || 0) - defaultStats.strength;
-    usedPoints += (cur.agility || 0) - defaultStats.agility;
-    usedPoints += (cur.intelligence || 0) - defaultStats.intelligence;
-    usedPoints += (cur.accuracy || 0) - defaultStats.accuracy;
-    usedPoints += Math.max(0, (cur.hp || 0) - defaultStats.hp);
-    usedPoints += Math.max(0, (cur.defense || 0) - defaultStats.defense);
-    const newUnspent = (userDoc.duelGame.unspentPoints || 0) + usedPoints;
+    const statFields = [
+      "strength",
+      "agility",
+      "intelligence",
+      "accuracy",
+      "hp",
+      "defense",
+    ];
+    const usedPoints = statFields.reduce((sum, field) => {
+      const curVal = cur[field] || 0;
+      const defVal = defaultStats[field];
+      return sum + Math.max(0, curVal - defVal);
+    }, 0);
+
+    const newUnspent = usedPoints;
 
     await statsColl.updateOne(
       { discordid: interaction.user.id },
