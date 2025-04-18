@@ -2,16 +2,17 @@
   "type": "module",
   "name": "disbot",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Discord бот для SquadJS",
+  "main": "src/index.js",
   "scripts": {
-    "start": "node ./src/index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node index.js",
+    "register-commands": "node src/registerCommands.js"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "discord.js": "^14.15.2",
-    "dotenv": "^16.4.5"
+    "dotenv": "^16.4.5",
+    "mongodb": "^5.7.0"
   }
 }
