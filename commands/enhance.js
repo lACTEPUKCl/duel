@@ -145,39 +145,51 @@ export async function execute(interaction) {
       });
     }
 
+    // ✅ Удаляем свиток
     inventory.splice(scrollIndex, 1);
+
     const successRate = getSuccessRate(chosenItem.enhance || 0);
     const roll = Math.random();
     let resultText;
 
     if (roll < successRate) {
+      // ✅ Заточка успешна
       chosenItem.enhance = (chosenItem.enhance || 0) + 1;
       chosenItem.stats = chosenItem.stats || {};
-      if (type === "weapon")
+      if (type === "weapon") {
         chosenItem.stats.damagePercentBonus =
           (chosenItem.stats.damagePercentBonus || 0) + 0.05;
-      else
+      } else {
         chosenItem.stats.defensePercentBonus =
           (chosenItem.stats.defensePercentBonus || 0) + 0.05;
-      resultText = `✅ Успех! Ваш ${
+      }
+      resultText = `✅ Успех! Ваше ${
         type === "weapon" ? "оружие" : "броня"
       } теперь +${chosenItem.enhance}.`;
     } else {
+      // ❌ Заточка провалена — предмет ломается
       resultText = `❌ Провал! Ваше ${
         type === "weapon" ? "оружие" : "броня"
       } было сломано.`;
-      if (entry.source === "inventory") inventory.splice(entry.index, 1);
-      else delete equipped[type];
+
+      // 🔧 Удаление предмета
+      if (entry.source === "inventory") {
+        inventory.splice(entry.index, 1);
+      } else {
+        delete equipped[type]; // ✅ Удаляем ключ (fix)
+      }
     }
 
+    // 🔄 Обновляем в базу всё целиком (fix)
     await duelModel.connect();
     const statsColl = duelModel.client.db("SquadJS").collection("mainstats");
+
     await statsColl.updateOne(
       { discordid: interaction.user.id },
       {
         $set: {
           "duelGame.inventory": inventory,
-          "duelGame.equipped": equipped,
+          "duelGame.equipped": equipped, // ✅ Сохраняем весь equipped
         },
       }
     );
