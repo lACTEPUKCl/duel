@@ -134,7 +134,7 @@ async function simulateDuel(challenger, opponent, interaction) {
     const raw =
       getWeaponDamage(att) * (0.8 + Math.random() * 0.4) * (1 + atkEff);
     const defVal =
-      getTotalDefense(def) * (0.4 + Math.random() * 0.3) * (1 - defEff);
+      getTotalDefense(def) * (0.2 + Math.random() * 0.2) * (1 - defEff);
     let dmg = 0;
     if (Math.random() <= hit) {
       dmg = Math.max(1, raw - defVal);
