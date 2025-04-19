@@ -30,8 +30,8 @@ export async function execute(interaction) {
       agility: 10,
       intelligence: 10,
       accuracy: 10,
-      hp: 100,
-      defense: 10,
+      hp: 100 + (level - 1) * 10,
+      defense: 10 + (level - 1) * 2,
       class: "novice",
     };
 
