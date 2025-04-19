@@ -28,7 +28,7 @@ export const gameItems = [
     canBeSold: true,
   },
   {
-    id: "potion_defence",
+    id: "potion_defense",
     name: "Зелье защиты",
     description: "Зелье, повышающее защиту на 10% на 5 дуэлей.",
     price: 500,
