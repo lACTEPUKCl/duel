@@ -195,7 +195,14 @@ export async function handleDuelAccept(interaction) {
     const interactionId = interaction.customId.split("_").slice(2).join("_");
     const duel = await duelModel.findPendingDuelByInteractionId(interactionId);
 
-    // 2. Проверяем существование дуэли
+    // Если дуэль уже завершена (есть победитель) — отклоняем
+    if (duel.winnerId) {
+      return interaction.reply({
+        content: "❌ Эта дуэль уже завершена!",
+        flags: MessageFlags.Ephemeral,
+      });
+    }
+
     if (!duel) {
       return interaction.reply({
         content: "❌ Дуэль не найдена или уже завершена!",
@@ -203,106 +210,61 @@ export async function handleDuelAccept(interaction) {
       });
     }
 
-    // 3. Проверяем, не является ли пользователь создателем дуэли
-    if (duel.challengerId === interaction.user.id) {
-      return interaction.reply({
-        content: "❌ Вы не можете принять свою дуэль!",
-        flags: MessageFlags.Ephemeral,
-      });
-    }
-
-    // 4. Если дуэль уже имеет оппонента
+    // 2. Проверка и атомарное принятие дуэли
+    const currentUserId = interaction.user.id;
+    // Если оппонент уже назначен
     if (duel.opponentId) {
-      if (duel.opponentId.toString() !== interaction.user.id.toString()) {
+      // Если это не вы — отклоняем
+      if (duel.opponentId.toString() !== currentUserId.toString()) {
         return interaction.reply({
           content: "❌ Дуэль уже принята другим игроком!",
           flags: MessageFlags.Ephemeral,
         });
       }
-      // Продолжаем обработку, если это тот же пользователь
-    }
-
-    // 5. Проверяем данные оппонента ДО установки
-    const oppData = await statsColl.findOne({
-      discordid: interaction.user.id,
-    });
-
-    if (!oppData?.duelGame) {
-      return interaction.reply({
-        content: "❌ Сначала создайте персонажа (/createcharacter)!",
-        flags: MessageFlags.Ephemeral,
-      });
-    }
-
-    if (duel.betAmount > 0 && (oppData.bonuses || 0) < duel.betAmount) {
-      return interaction.reply({
-        content: `❌ Недостаточно бонусов! Нужно: ${duel.betAmount}`,
-        flags: MessageFlags.Ephemeral,
-      });
-    }
-
-    // 6. Атомарная установка оппонента с полной проверкой
-    const currentUserId = interaction.user.id;
-    const updateResult = await duelsColl.updateOne(
-      {
-        _id: duel._id,
-        $or: [
-          { opponentId: { $exists: false } }, // Если оппонента нет
-          { opponentId: currentUserId }, // Или если оппонент - текущий пользователь
-        ],
-      },
-      {
-        $set: {
-          opponentId: String(currentUserId), // Явное преобразование в строку
-          updatedAt: new Date(),
+      // Если вы уже оппонент — продолжаем без обновления
+    } else {
+      // Назначаем вас как оппонента и переводим статус
+      const result = await duelsColl.findOneAndUpdate(
+        {
+          _id: duel._id,
+          status: "pending",
+          $or: [{ opponentId: { $exists: false } }, { opponentId: null }],
         },
+        {
+          $set: {
+            opponentId: currentUserId,
+            status: "in-progress",
+            updatedAt: new Date(),
+          },
+        },
+        { returnDocument: "after" }
+      );
+      if (!result.value) {
+        return interaction.reply({
+          content: "❌ Дуэль уже принята или завершена!",
+          flags: MessageFlags.Ephemeral,
+        });
       }
-    );
+      // Обновляем локальный объект статусом и оппонентом
+      duel.opponentId = result.value.opponentId;
+      duel.status = result.value.status;
+    }
 
-    // // Проверяем результат
-    // if (updateResult.modifiedCount === 0) {
-    //   // Получаем актуальные данные для диагностики
-    //   const currentDuelState = await duelsColl.findOne({ _id: duel._id });
-
-    //   console.log("Конфликт при принятии дуэли:", {
-    //     duelId: duel._id,
-    //     currentOpponent: currentDuelState?.opponentId,
-    //     attemptingUser: currentUserId,
-    //     duelState: currentDuelState,
-    //   });
-
-    //   return interaction.reply({
-    //     content: "❌ Дуэль уже принята другим игроком!",
-    //     flags: MessageFlags.Ephemeral,
-    //   });
-    // }
-
-    // Обязательно обновляем локальный объект
-    duel.opponentId = currentUserId;
-
-    // 7. Обновляем сообщение
+    // 4. Деактивируем кнопки
     const disabled = interaction.message.components.map((row) =>
       new ActionRowBuilder().addComponents(
         row.components.map((btn) => ButtonBuilder.from(btn).setDisabled(true))
       )
     );
     await interaction.message.edit({ components: disabled });
-    await interaction.deferReply({});
+    await interaction.deferReply();
 
-    // 8. Получаем полные данные участников
+    // 5. Загружаем данные участников и симулируем дуэль
     const [challengerData, opponentData] = await Promise.all([
       statsColl.findOne({ discordid: duel.challengerId }),
       statsColl.findOne({ discordid: duel.opponentId }),
     ]);
 
-    if (!challengerData?.duelGame || !opponentData?.duelGame) {
-      return interaction.reply({
-        content: "❌ Ошибка загрузки данных персонажей!",
-        flags: MessageFlags.Ephemeral,
-      });
-    }
-
-    // 10. Симулируем дуэль
     const { winnerId, loserId, battleLog } = await simulateDuel(
       challengerData,
       opponentData,
