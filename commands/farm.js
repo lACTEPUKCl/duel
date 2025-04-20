@@ -8,7 +8,7 @@ import {
 } from "discord.js";
 import { duelModel } from "../models/duel.js";
 import { checkUserBinding } from "../utils/checkUserBinding.js";
-
+import { awardXP } from "./leveling.js";
 export const data = new SlashCommandBuilder()
   .setName("farm")
   .setDescription("Начать или закончить фарм опыта (XP)");
@@ -21,7 +21,7 @@ export async function execute(interaction) {
   const statsColl = duelModel.client.db("SquadJS").collection("mainstats");
   const user = await statsColl.findOne({ discordid: interaction.user.id });
   const now = Date.now();
-  const farmStart = user.duelGame.farmStart;
+  const farmStart = user.duelGame?.farmStart;
 
   if (!farmStart) {
     const embed = new EmbedBuilder()
@@ -70,7 +70,7 @@ export async function handleFarmButton(interaction) {
     const statsColl = duelModel.client.db("SquadJS").collection("mainstats");
     const user = await statsColl.findOne({ discordid: interaction.user.id });
     const now = Date.now();
-    const farmStart = user.duelGame.farmStart;
+    const farmStart = user.duelGame?.farmStart;
 
     if (interaction.customId === "farm_start") {
       if (farmStart) {
@@ -88,13 +88,16 @@ export async function handleFarmButton(interaction) {
         components: [],
         flags: MessageFlags.Ephemeral,
       });
-    } else if (interaction.customId === "farm_end") {
+    }
+
+    if (interaction.customId === "farm_end") {
       if (!farmStart) {
         return interaction.reply({
           content: "Вы ещё не начали фарм.",
           flags: MessageFlags.Ephemeral,
         });
       }
+
       await statsColl.updateOne(
         { discordid: interaction.user.id },
         { $unset: { "duelGame.farmStart": "" } }
@@ -103,14 +106,25 @@ export async function handleFarmButton(interaction) {
       const elapsedMin = Math.floor((now - farmStart) / 60000);
       const XP_PER_MINUTE = 1;
       const xpGain = elapsedMin * XP_PER_MINUTE;
+      const oldLevel = user.duelGame.level || 1;
 
-      await statsColl.updateOne(
-        { discordid: interaction.user.id },
-        { $inc: { "duelGame.xp": xpGain } }
-      );
+      const {
+        level: newLevel,
+        xp: leftoverXp,
+        unspentPoints,
+      } = await awardXP(interaction.user.id, xpGain);
+
+      let levelText;
+      if (newLevel > oldLevel) {
+        levelText = `🎉 Поздравляю, вы повысились до **${newLevel}** уровня!`;
+      } else {
+        levelText = `Ваш уровень остался **${newLevel}**.`;
+      }
 
       return interaction.update({
-        content: `Вы завершили фарм **${elapsedMin}** мин и получили **${xpGain}** XP.`,
+        content:
+          `Вы завершили фарм **${elapsedMin}** мин и получили **${xpGain}** XP.\n` +
+          `${levelText} Остаток XP: **${leftoverXp}**, нераспределённых очков: **${unspentPoints}**.`,
         components: [],
         flags: MessageFlags.Ephemeral,
       });

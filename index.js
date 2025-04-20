@@ -9,11 +9,11 @@ import { join, dirname } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import dotenv from "dotenv";
 import { handleDuelAccept } from "./commands/duelGame.js";
+import { handleDuelCancel } from "./commands/duel.js";
 import { duelModel } from "./models/duel.js";
 import { handleShopSelect } from "./commands/shop.js";
 import { handleButton as handleQuestButton } from "./commands/quest.js";
 import * as farm from "./commands/farm.js";
-
 dotenv.config();
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
@@ -49,6 +49,8 @@ client.on("interactionCreate", async (interaction) => {
       interaction.customId.startsWith("duel_accept_")
     ) {
       await handleDuelAccept(interaction);
+    } else if (interaction.customId.startsWith("duel_cancel_")) {
+      return handleDuelCancel(interaction);
     } else if (
       interaction.isStringSelectMenu() &&
       interaction.customId === "shop_buy"

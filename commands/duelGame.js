@@ -59,9 +59,9 @@ function computeHitChance(character) {
 }
 
 function computeCritChance(character) {
-  const effAgi = getEffectiveStat(character, "agility");
+  const effAcc = getEffectiveStat(character, "accuracy");
   const main = getMainSkill(character);
-  const baseCrit = 0.1 + 0.4 * Math.min(effAgi / main, 1);
+  const baseCrit = 0.1 + 0.4 * Math.min(effAcc / main, 1);
   const w = character.duelGame.equipped?.weapon;
   const bonusCrit = w?.stats?.critChanceBonus || 0;
   return baseCrit + bonusCrit;

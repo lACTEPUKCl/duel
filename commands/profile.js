@@ -2,6 +2,7 @@ import { SlashCommandBuilder, EmbedBuilder, MessageFlags } from "discord.js";
 import { duelModel } from "../models/duel.js";
 import { checkUserBinding } from "../utils/checkUserBinding.js";
 import { classes } from "../classes/classes.js";
+import { xpThreshold } from "./leveling.js";
 
 export const data = new SlashCommandBuilder()
   .setName("profile")
@@ -57,6 +58,10 @@ export async function execute(interaction) {
       equipped = {},
     } = userData.duelGame;
 
+    // Рассчитываем XP до следующего уровня
+    const nextXP = xpThreshold(level);
+    const xpToNext = Math.max(nextXP - xp, 0);
+
     const classId = stats.class;
     const classDef = getClassDefinition(classId) || {
       statMultipliers: {},
@@ -64,6 +69,8 @@ export async function execute(interaction) {
     };
     const multipliers = classDef.statMultipliers || {};
     const className = classDef.name || classId || "—";
+
+    // Рассчитываем финальные статы
     const characterStats = { ...stats };
     delete characterStats.class;
     const finalStats = {};
@@ -73,6 +80,7 @@ export async function execute(interaction) {
       const bonus = Math.floor(base * mult);
       finalStats[key] = base + bonus;
     }
+    // Бонусы экипировки
     const w = typeof equipped.weapon === "object" ? equipped.weapon : {};
     const a = typeof equipped.armor === "object" ? equipped.armor : {};
     if (finalStats.accuracy !== undefined && w.stats?.accuracyBonus) {
@@ -86,8 +94,34 @@ export async function execute(interaction) {
       );
     }
 
+    // Определяем главную стату и рассчитываем параметры боя
+    let mainKey = "strength";
+    const clsLower = (classId || "").toLowerCase();
+    if (clsLower === "mage") mainKey = "intelligence";
+    if (clsLower === "archer") mainKey = "agility";
+    const mainVal = finalStats[mainKey] || 0;
+    const dmgBonus = w.stats?.damagePercentBonus || 0;
+    const avgDamage = mainVal * (1 + dmgBonus);
+    const effAcc = finalStats.accuracy || 0;
+    const ratioHit = mainVal > 0 ? Math.min(effAcc / mainVal, 1) : 0;
+    const hitChance = 0.3 + 0.6 * ratioHit;
+    const ratioCrit = mainVal > 0 ? Math.min(effAcc / mainVal, 1) : 0;
+    const critChance = 0.1 + 0.4 * ratioCrit + (w.stats?.critChanceBonus || 0);
+
+    // Формируем поле характеристик
     const statsField = Object.entries(finalStats)
-      .map(([k, v]) => `**${k[0].toUpperCase() + k.slice(1)}**: ${v}`)
+      .map(([k, v]) => {
+        const label = k[0].toUpperCase() + k.slice(1);
+        if (k === mainKey) {
+          return `**${label}**: ${v} (урон с оружием: ${avgDamage.toFixed(1)})`;
+        }
+        if (k === "accuracy") {
+          return `**${label}**: ${v} (меткость: ${(hitChance * 100).toFixed(
+            0
+          )}% крит шанс: ${(critChance * 100).toFixed(0)}%)`;
+        }
+        return `**${label}**: ${v}`;
+      })
       .join("\n");
 
     const weaponLabel = equipped.weapon
@@ -101,26 +135,32 @@ export async function execute(interaction) {
         : `${equipped.armor.name} +${equipped.armor.enhance || 0}`
       : "—";
 
-    const dmgPct = (w.stats?.damagePercentBonus || 0) * 100;
-    const critPct = (w.stats?.critChanceBonus || 0) * 100;
-    const accPct = (w.stats?.accuracyBonus || 0) * 100;
-    const defPct = (a.stats?.defensePercentBonus || 0) * 100;
-
+    // Эмбед
     const embed = new EmbedBuilder()
       .setColor(0x3498db)
       .setTitle(`Профиль ${targetUser.username}`)
       .addFields(
         { name: "Класс", value: className, inline: true },
         { name: "Уровень", value: `${level}`, inline: true },
-        { name: "Опыт", value: `${xp}`, inline: true },
-        { name: "Характеристики", value: statsField || "—", inline: false },
+        {
+          name: "Опыт",
+          value: `${xp}/${nextXP} (до следующего: ${xpToNext})`,
+          inline: true,
+        },
+        { name: "Характеристики", value: statsField, inline: false },
         {
           name: "Бонусы экипировки",
           value:
-            `**Урон**: +${dmgPct.toFixed(0)}%\n` +
-            `**Крит шанс**: +${critPct.toFixed(0)}%\n` +
-            `**Точность**: +${accPct.toFixed(0)}%\n` +
-            `**Защита**: +${defPct.toFixed(0)}%`,
+            `**Урон**: +${(dmgBonus * 100).toFixed(0)}%\n` +
+            `**Крит шанс**: +${(w.stats?.critChanceBonus * 100 || 0).toFixed(
+              0
+            )}%\n` +
+            `**Точность**: +${(w.stats?.accuracyBonus * 100 || 0).toFixed(
+              0
+            )}%\n` +
+            `**Защита**: +${(a.stats?.defensePercentBonus * 100 || 0).toFixed(
+              0
+            )}%`,
           inline: false,
         },
         {

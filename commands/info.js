@@ -40,6 +40,7 @@ export async function execute(interaction) {
         value: "Вызвать игрока на дуэль с возможной ставкой бонусов",
       },
       { name: "/quest", value: "Получить задание и отправиться на квест" },
+      { name: "/farm", value: "Встать на фарм опыта" },
       { name: "/info", value: "Показать это сообщение" }
     )
     .setFooter({ text: "Используйте команды с / (слэш), например: /profile" });
