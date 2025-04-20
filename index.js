@@ -12,6 +12,7 @@ import { handleDuelAccept } from "./commands/duelGame.js";
 import { duelModel } from "./models/duel.js";
 import { handleShopSelect } from "./commands/shop.js";
 import { handleButton as handleQuestButton } from "./commands/quest.js";
+import * as farm from "./commands/farm.js";
 
 dotenv.config();
 
@@ -60,7 +61,8 @@ client.on("interactionCreate", async (interaction) => {
         interaction.customId.startsWith("quest_new"))
     ) {
       await handleQuestButton(interaction);
-    }
+    } else if (interaction.customId.startsWith("farm_"))
+      return farm.handleFarmButton(interaction);
   } catch (error) {
     console.error("Interaction error:", error);
     try {

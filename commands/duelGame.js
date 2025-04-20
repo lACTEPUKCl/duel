@@ -82,12 +82,12 @@ async function simulateDuel(challenger, opponent, interaction) {
   await duelModel.connect();
   const statsColl = duelModel.client.db("SquadJS").collection("mainstats");
 
+  // 1. Исходные HP и порядок ходов
   let hpC = getEffectiveStat(challenger, "hp") || 100;
   let hpO = getEffectiveStat(opponent, "hp") || 100;
   const firstC = Math.random() < 0.5;
-  const log = [];
-  let rnd = 1;
 
+  // 2. Функция получения отображаемого имени (как было в оригинале)
   const getDisplayName = async (userId, interaction) => {
     try {
       const member = await interaction.guild.members.fetch(userId);
@@ -95,34 +95,34 @@ async function simulateDuel(challenger, opponent, interaction) {
       if (member.user.globalName) return member.user.globalName.slice(0, 14);
       if (member.user.username) return member.user.username.slice(0, 14);
       return userId.slice(0, 14);
-    } catch (error) {
-      console.error(`Ошибка получения данных пользователя ${userId}:`, error);
-
+    } catch {
       try {
         const user = await interaction.client.users.fetch(userId);
         if (user.globalName) return user.globalName.slice(0, 14);
         if (user.username) return user.username.slice(0, 14);
-      } catch (e) {
-        console.error(`Ошибка получения данных через REST API ${userId}:`, e);
-      }
-
+      } catch {}
       return userId.slice(0, 14);
     }
   };
 
+  // 3. Вычисляем ники до симуляции
   const [nameC, nameO] = await Promise.all([
     getDisplayName(challenger.discordid, interaction),
     getDisplayName(opponent.discordid, interaction),
   ]);
 
-  log.push("Раунд |   Атакующий    | Урон  |    Защитник    |   HP");
-  log.push("-".repeat(56));
+  // 4. Собираем полный лог
+  const fullLog = [
+    "Раунд |   Атакующий    | Урон  |    Защитник    |   HP",
+    "-".repeat(56),
+  ];
 
-  while (hpC > 0 && hpO > 0 && rnd <= 20) {
+  let rnd = 1;
+  while (hpC > 0 && hpO > 0) {
     const isCAtt = firstC ? rnd % 2 === 1 : rnd % 2 === 0;
-    const [att, def, aName, dName] = isCAtt
-      ? [challenger, opponent, nameC, nameO]
-      : [opponent, challenger, nameO, nameC];
+    const [att, def] = isCAtt ? [challenger, opponent] : [opponent, challenger];
+    const aName = isCAtt ? nameC : nameO;
+    const dName = isCAtt ? nameO : nameC;
 
     const hit = computeHitChance(att);
     const crit = computeCritChance(att);
@@ -130,11 +130,11 @@ async function simulateDuel(challenger, opponent, interaction) {
       att.duelGame.activeEffects?.potion_damage?.remaining > 0 ? 0.1 : 0;
     const defEff =
       def.duelGame.activeEffects?.potion_defense?.remaining > 0 ? 0.1 : 0;
-
     const raw =
       getWeaponDamage(att) * (0.8 + Math.random() * 0.4) * (1 + atkEff);
     const defVal =
       getTotalDefense(def) * (0.2 + Math.random() * 0.2) * (1 - defEff);
+
     let dmg = 0;
     if (Math.random() <= hit) {
       dmg = Math.max(1, raw - defVal);
@@ -144,16 +144,18 @@ async function simulateDuel(challenger, opponent, interaction) {
     if (isCAtt) hpO = Math.max(0, hpO - dmg);
     else hpC = Math.max(0, hpC - dmg);
 
-    log.push(
+    fullLog.push(
       `${String(rnd).padEnd(6)}| ` +
         `${aName.padEnd(15)}| ` +
         `${String(dmg).padStart(5)} | ` +
         `${dName.padEnd(15)}| ` +
         `${String(isCAtt ? hpO : hpC).padStart(5)}`
     );
+
     rnd++;
   }
 
+  // 5. Обновляем оставшиеся эффекты (как в оригинале)
   [challenger, opponent].forEach((c) => {
     const effs = c.duelGame.activeEffects || {};
     for (const e in effs) {
@@ -162,6 +164,7 @@ async function simulateDuel(challenger, opponent, interaction) {
     }
   });
 
+  // 6. Сохраняем эффекты в БД
   await statsColl.updateOne(
     { discordid: challenger.discordid },
     { $set: { "duelGame.activeEffects": challenger.duelGame.activeEffects } }
@@ -171,9 +174,14 @@ async function simulateDuel(challenger, opponent, interaction) {
     { $set: { "duelGame.activeEffects": opponent.duelGame.activeEffects } }
   );
 
+  // 7. Обрезаем лог до 20 последних раундов (после заголовка)
+  const battleLog = [fullLog[0], fullLog[1], ...fullLog.slice(2).slice(-20)];
+
+  // 8. Определяем победителя
   const winnerId = hpC > hpO ? challenger.discordid : opponent.discordid;
   const loserId = hpC > hpO ? opponent.discordid : challenger.discordid;
-  return { winnerId, loserId, battleLog: log };
+
+  return { winnerId, loserId, battleLog };
 }
 
 export async function handleDuelAccept(interaction) {
@@ -353,7 +361,7 @@ export async function handleDuelAccept(interaction) {
 
     // 12. Награждаем опытом
     await awardXP(winnerId, 100);
-    await awardXP(loserId, 30);
+    await awardXP(loserId, 100);
 
     // 13. Создаем embed с результатами
     const embed = new EmbedBuilder()
