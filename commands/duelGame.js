@@ -353,7 +353,7 @@ export async function handleDuelAccept(interaction) {
     // 15. Таймаут для проигравшего
     interaction.guild.members
       .fetch(loserId)
-      .then((m) => m.timeout(1 * 60 * 1000, "Поражение в дуэли"))
+      .then((m) => m.timeout(10 * 60 * 1000, "Поражение в дуэли"))
       .catch(() => {});
   } catch (err) {
     console.error("Ошибка при обработке дуэли:", err);
