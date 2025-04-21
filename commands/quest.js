@@ -62,7 +62,7 @@ export async function execute(interaction) {
           },
           {
             name: "Награда",
-            value: `XP: ${newQuest.success.xp}, Бонусы: ${newQuest.success.bonus}`,
+            value: `XP: ${newQuest.success.xp}`,
             inline: true,
           }
         )
@@ -98,7 +98,7 @@ export async function execute(interaction) {
           },
           {
             name: "Награда",
-            value: `XP: ${activeQuest.success.xp}, Бонусы: ${activeQuest.success.bonus}`,
+            value: `XP: ${activeQuest.success.xp}`,
             inline: true,
           }
         )
@@ -131,23 +131,34 @@ export async function execute(interaction) {
       });
     }
 
-    const outcome = activeQuest.success;
-    await statsColl.updateOne(
-      { discordid: interaction.user.id },
-      {
-        $unset: { "duelGame.activeQuest": "" },
-        $inc: { "duelGame.xp": outcome.xp, bonuses: outcome.bonus },
-      }
-    );
+    const { xp, loot } = activeQuest.success;
+    const dropped = loot.filter((item) => Math.random() <= item.chance);
+
+    const updateOps = { $inc: { "duelGame.xp": xp } };
+    if (dropped.length) {
+      updateOps.$push = { "duelGame.inventory": { $each: dropped } };
+    }
+    await statsColl.updateOne({ discordid: interaction.user.id }, updateOps);
 
     const resultEmbed = new EmbedBuilder()
       .setTitle("Квест завершён!")
       .setDescription(activeQuest.description)
-      .addFields(
-        { name: "Получено XP", value: `${outcome.xp}`, inline: true },
-        { name: "Получено бонусов", value: `${outcome.bonus}`, inline: true }
-      )
+      .addFields({ name: "Получено XP", value: `${xp}`, inline: true })
       .setColor(0x2ecc71);
+
+    if (dropped.length) {
+      resultEmbed.addFields({
+        name: "Выпало предметов",
+        value: dropped.map((d) => d.name).join(", "),
+        inline: false,
+      });
+    } else {
+      resultEmbed.addFields({
+        name: "Выпало предметов",
+        value: "Ничего",
+        inline: false,
+      });
+    }
 
     const nextQuest = quests[Math.floor(Math.random() * quests.length)];
     const newQuest = {
@@ -173,7 +184,7 @@ export async function execute(interaction) {
         },
         {
           name: "Награда",
-          value: `XP: ${newQuest.success.xp}, Бонусы: ${newQuest.success.bonus}`,
+          value: `XP: ${newQuest.success.xp}`,
           inline: true,
         }
       )

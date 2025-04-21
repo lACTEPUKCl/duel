@@ -6,8 +6,7 @@
       "duration": 7200000,
       "chance": 0.8,
       "success": {
-        "xp": 75,
-        "bonus": 100,
+        "xp": 100,
         "loot": [
           { "id": "potion_damage", "name": "Зелье урона", "chance": 0.8 },
           { "id": "potion_defense", "name": "Зелье защиты", "chance": 0.8 },
@@ -52,11 +51,6 @@
             "chance": 0.05
           }
         ]
-      },
-      "failure": {
-        "xp": 20,
-        "bonus": -100,
-        "loot": []
       }
     },
     {
@@ -65,8 +59,7 @@
       "duration": 7200000,
       "chance": 0.8,
       "success": {
-        "xp": 75,
-        "bonus": 100,
+        "xp": 100,
         "loot": [
           { "id": "potion_damage", "name": "Зелье урона", "chance": 0.8 },
           { "id": "potion_defense", "name": "Зелье защиты", "chance": 0.8 },
@@ -111,11 +104,6 @@
             "chance": 0.05
           }
         ]
-      },
-      "failure": {
-        "xp": 20,
-        "bonus": -100,
-        "loot": []
       }
     },
     {
@@ -124,8 +112,7 @@
       "duration": 7200000,
       "chance": 0.8,
       "success": {
-        "xp": 75,
-        "bonus": 100,
+        "xp": 100,
         "loot": [
           { "id": "potion_damage", "name": "Зелье урона", "chance": 0.8 },
           { "id": "potion_defense", "name": "Зелье защиты", "chance": 0.8 },
@@ -170,11 +157,6 @@
             "chance": 0.05
           }
         ]
-      },
-      "failure": {
-        "xp": 20,
-        "bonus": -100,
-        "loot": []
       }
     },
     {
@@ -183,8 +165,7 @@
       "duration": 18000000,
       "chance": 0.6,
       "success": {
-        "xp": 150,
-        "bonus": 200,
+        "xp": 200,
         "loot": [
           { "id": "potion_damage", "name": "Зелье урона", "chance": 0.7 },
           { "id": "potion_defense", "name": "Зелье защиты", "chance": 0.7 },
@@ -242,8 +223,7 @@
       "duration": 18000000,
       "chance": 0.6,
       "success": {
-        "xp": 150,
-        "bonus": 200,
+        "xp": 200,
         "loot": [
           { "id": "potion_damage", "name": "Зелье урона", "chance": 0.7 },
           { "id": "potion_defense", "name": "Зелье защиты", "chance": 0.7 },
@@ -288,11 +268,6 @@
             "chance": 0.05
           }
         ]
-      },
-      "failure": {
-        "xp": 50,
-        "bonus": -250,
-        "loot": []
       }
     },
     {
@@ -301,8 +276,7 @@
       "duration": 18000000,
       "chance": 0.6,
       "success": {
-        "xp": 150,
-        "bonus": 200,
+        "xp": 200,
         "loot": [
           { "id": "potion_damage", "name": "Зелье урона", "chance": 0.7 },
           { "id": "potion_defense", "name": "Зелье защиты", "chance": 0.7 },
@@ -347,11 +321,6 @@
             "chance": 0.05
           }
         ]
-      },
-      "failure": {
-        "xp": 50,
-        "bonus": -250,
-        "loot": []
       }
     },
     {
@@ -361,7 +330,6 @@
       "chance": 0.4,
       "success": {
         "xp": 300,
-        "bonus": 300,
         "loot": [
           { "id": "potion_damage", "name": "Зелье урона", "chance": 0.6 },
           { "id": "potion_defense", "name": "Зелье защиты", "chance": 0.6 },
@@ -406,11 +374,6 @@
             "chance": 0.05
           }
         ]
-      },
-      "failure": {
-        "xp": 100,
-        "bonus": -500,
-        "loot": []
       }
     },
     {
@@ -420,7 +383,6 @@
       "chance": 0.4,
       "success": {
         "xp": 300,
-        "bonus": 300,
         "loot": [
           { "id": "potion_damage", "name": "Зелье урона", "chance": 0.6 },
           { "id": "potion_defense", "name": "Зелье защиты", "chance": 0.6 },
@@ -465,11 +427,6 @@
             "chance": 0.05
           }
         ]
-      },
-      "failure": {
-        "xp": 100,
-        "bonus": -500,
-        "loot": []
       }
     },
     {
@@ -524,11 +481,6 @@
             "chance": 0.05
           }
         ]
-      },
-      "failure": {
-        "xp": 100,
-        "bonus": -500,
-        "loot": []
       }
     }
   ]
