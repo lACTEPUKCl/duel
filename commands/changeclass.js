@@ -22,7 +22,6 @@ export async function execute(interaction) {
   try {
     await duelModel.connect();
     const statsColl = duelModel.client.db("SquadJS").collection("mainstats");
-
     const userData = await statsColl.findOne({
       discordid: interaction.user.id,
     });
@@ -33,49 +32,52 @@ export async function execute(interaction) {
       });
     }
 
-    const baseClasses = ["warrior", "mage", "archer"];
     const currentClass = (
-      userData.duelGame?.stats.class || "novice"
+      userData.duelGame.stats.class || "novice"
     ).toLowerCase();
-    let baseClass = userData.duelGame?.stats.class;
+    if (currentClass === "novice") {
+      return interaction.reply({
+        content:
+          "❌ У вас ещё нет базового класса. Пожалуйста, выберите базовый класс командой /setclass.",
+        flags: MessageFlags.Ephemeral,
+      });
+    }
 
-    if (!baseClass) {
-      if (baseClasses.includes(currentClass)) {
-        baseClass = currentClass;
-      } else {
-        for (const b of baseClasses) {
-          for (const level in classes[b].advanced) {
-            if (
-              classes[b].advanced[level].some((opt) => opt.id === currentClass)
-            ) {
-              baseClass = b;
-              break;
-            }
+    const baseClasses = ["warrior", "mage", "archer"];
+    let baseClass = currentClass;
+
+    if (!baseClasses.includes(baseClass)) {
+      for (const b of baseClasses) {
+        const advMap = classes[b].advanced;
+        for (const lvl of Object.keys(advMap)) {
+          if (advMap[lvl].some((opt) => opt.id === currentClass)) {
+            baseClass = b;
+            break;
           }
-          if (baseClass) break;
         }
-        if (!baseClass) {
-          return interaction.reply({
-            content:
-              "Вы уже имеете продвинутый класс, и базовый класс не определён.",
-            flags: MessageFlags.Ephemeral,
-          });
-        }
+        if (baseClasses.includes(baseClass)) break;
+      }
+      if (!baseClasses.includes(baseClass)) {
+        return interaction.reply({
+          content:
+            "❌ Не удалось определить ваш базовый класс. Обратитесь к администратору.",
+          flags: MessageFlags.Ephemeral,
+        });
       }
     }
 
-    const userLevel = userData.duelGame?.level || 1;
+    const userLevel = userData.duelGame.level || 1;
     const advancedMapping = classes[baseClass].advanced;
-    const allThresholds = Object.keys(advancedMapping)
+    const thresholds = Object.keys(advancedMapping)
       .map(Number)
       .sort((a, b) => a - b);
-    const reached = allThresholds.filter((thr) => thr <= userLevel);
+    const reached = thresholds.filter((thr) => thr <= userLevel);
 
     if (reached.length === 0) {
-      const nextThreshold = allThresholds[0];
-      const missing = nextThreshold - userLevel;
+      const next = thresholds[0];
+      const missing = next - userLevel;
       return interaction.reply({
-        content: `Для класса **${baseClass}** ваш уровень (${userLevel}) пока не позволяет продвижение. До уровня **${nextThreshold}** не хватает **${missing}** ${
+        content: `Для класса **${baseClass}** ваш уровень (${userLevel}) пока не позволяет продвижение. До уровня **${next}** не хватает **${missing}** ${
           missing === 1 ? "уровня" : "уровней"
         }.`,
         flags: MessageFlags.Ephemeral,
@@ -84,13 +86,14 @@ export async function execute(interaction) {
 
     const maxReached = Math.max(...reached);
     const availableAdvanced = advancedMapping[maxReached] || [];
+
     if (availableAdvanced.length === 0) {
-      const higher = allThresholds.filter((thr) => thr > userLevel);
-      if (higher.length > 0) {
-        const nextThreshold = higher[0];
-        const missing = nextThreshold - userLevel;
+      const future = thresholds.filter((thr) => thr > userLevel);
+      if (future.length > 0) {
+        const next = future[0];
+        const missing = next - userLevel;
         return interaction.reply({
-          content: `Для класса **${baseClass}** на уровне ${maxReached} продвижение не предусмотрено. До уровня **${nextThreshold}** не хватает **${missing}** ${
+          content: `Для класса **${baseClass}** на уровне ${maxReached} продвижение не предусмотрено. До уровня **${next}** не хватает **${missing}** ${
             missing === 1 ? "уровня" : "уровней"
           }.`,
           flags: MessageFlags.Ephemeral,
@@ -115,25 +118,23 @@ export async function execute(interaction) {
       .addOptions(options);
     const row = new ActionRowBuilder().addComponents(selectMenu);
 
-    const replyMsg = await interaction.reply({
+    const msg = await interaction.reply({
       content: `Вы достигли уровня ${userLevel} и можете выбрать продвинутый класс:`,
       components: [row],
       flags: MessageFlags.Ephemeral,
       fetchReply: true,
     });
 
-    const selection = await replyMsg.awaitMessageComponent({
+    const selection = await msg.awaitMessageComponent({
       filter: (i) =>
         i.customId === "changeclass_select" &&
         i.user.id === interaction.user.id,
       time: 60000,
     });
 
-    const chosenClass = selection.values[0];
-    const chosenOption = availableAdvanced.find(
-      (opt) => opt.id === chosenClass
-    );
-    if (!chosenOption) {
+    const chosenId = selection.values[0];
+    const chosen = availableAdvanced.find((opt) => opt.id === chosenId);
+    if (!chosen) {
       return selection.update({
         content: "Ошибка: выбранный класс не найден.",
         components: [],
@@ -142,26 +143,21 @@ export async function execute(interaction) {
 
     await statsColl.updateOne(
       { discordid: interaction.user.id },
-      { $set: { "duelGame.stats.class": chosenClass } }
+      { $set: { "duelGame.stats.class": chosenId } }
     );
 
     const embed = new EmbedBuilder()
       .setColor(0x00ff00)
       .setTitle("Класс изменён")
       .setDescription(
-        `Поздравляем! Вы стали **${chosenOption.name}**.
-${chosenOption.description}`
+        `Поздравляем! Вы стали **${chosen.name}**.\n${chosen.description}`
       );
 
-    await selection.update({
-      content: "Класс успешно изменён.",
-      embeds: [embed],
-      components: [],
-    });
+    await selection.update({ content: null, embeds: [embed], components: [] });
   } catch (err) {
     console.error(err);
     return interaction.reply({
-      content: "Ошибка при обработке смены класса.",
+      content: "❌ Ошибка при обработке смены класса.",
       flags: MessageFlags.Ephemeral,
     });
   }

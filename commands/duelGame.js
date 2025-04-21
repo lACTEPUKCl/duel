@@ -8,6 +8,7 @@ import { weapons } from "../config/duelConfig.js";
 import { awardXP } from "./leveling.js";
 import { duelModel } from "../models/duel.js";
 import { classes } from "../classes/classes.js";
+import { checkUserBinding } from "../utils/checkUserBinding.js";
 
 function getClassDefinition(classId) {
   if (classes[classId]) return classes[classId];
@@ -185,6 +186,8 @@ async function simulateDuel(challenger, opponent, interaction) {
 }
 
 export async function handleDuelAccept(interaction) {
+  const userDoc = await checkUserBinding(interaction);
+  if (!userDoc) return;
   try {
     await duelModel.connect();
     const db = duelModel.client.db("SquadJS");

@@ -145,7 +145,6 @@ export async function execute(interaction) {
       });
     }
 
-    // ✅ Удаляем свиток
     inventory.splice(scrollIndex, 1);
 
     const successRate = getSuccessRate(chosenItem.enhance || 0);
@@ -153,7 +152,6 @@ export async function execute(interaction) {
     let resultText;
 
     if (roll < successRate) {
-      // ✅ Заточка успешна
       chosenItem.enhance = (chosenItem.enhance || 0) + 1;
       chosenItem.stats = chosenItem.stats || {};
       if (type === "weapon") {
@@ -167,20 +165,17 @@ export async function execute(interaction) {
         type === "weapon" ? "оружие" : "броня"
       } теперь +${chosenItem.enhance}.`;
     } else {
-      // ❌ Заточка провалена — предмет ломается
       resultText = `❌ Провал! Ваше ${
         type === "weapon" ? "оружие" : "броня"
       } было сломано.`;
 
-      // 🔧 Удаление предмета
       if (entry.source === "inventory") {
         inventory.splice(entry.index, 1);
       } else {
-        delete equipped[type]; // ✅ Удаляем ключ (fix)
+        delete equipped[type];
       }
     }
 
-    // 🔄 Обновляем в базу всё целиком (fix)
     await duelModel.connect();
     const statsColl = duelModel.client.db("SquadJS").collection("mainstats");
 
@@ -189,7 +184,7 @@ export async function execute(interaction) {
       {
         $set: {
           "duelGame.inventory": inventory,
-          "duelGame.equipped": equipped, // ✅ Сохраняем весь equipped
+          "duelGame.equipped": equipped,
         },
       }
     );
