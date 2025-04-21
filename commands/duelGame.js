@@ -212,6 +212,13 @@ export async function handleDuelAccept(interaction) {
 
     // 2. Проверка и атомарное принятие дуэли
     const currentUserId = interaction.user.id;
+    if (currentUserId === duel.challengerId) {
+      return interaction.reply({
+        content: "❌ Вы не можете принять собственную дуэль!",
+        flags: MessageFlags.Ephemeral,
+      });
+    }
+
     // Если оппонент уже назначен
     if (duel.opponentId) {
       // Если это не вы — отклоняем
