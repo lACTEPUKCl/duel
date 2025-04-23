@@ -29,14 +29,14 @@ export async function checkUserBinding(interaction) {
       return null;
     }
 
-    if (!userDoc.duelGame) {
-      await interaction.reply({
-        content:
-          "❌ Персонаж не создан. Пожалуйста, используйте команду /createcharacter, чтобы создать персонажа.",
-        flags: MessageFlags.Ephemeral,
-      });
-      return null;
-    }
+    //if (!userDoc.duelGame) {
+     // await interaction.reply({
+     //   content:
+     //     "❌ Персонаж не создан. Пожалуйста, используйте команду /createcharacter, чтобы создать персонажа.",
+     //   flags: MessageFlags.Ephemeral,
+     // });
+     // return null;
+    //}
 
     return userDoc;
   } catch (err) {
