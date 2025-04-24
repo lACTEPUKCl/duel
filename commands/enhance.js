@@ -145,13 +145,14 @@ export async function execute(interaction) {
       });
     }
 
-    inventory.splice(scrollIndex, 1);
-
     const successRate = getSuccessRate(chosenItem.enhance || 0);
     const roll = Math.random();
     let resultText;
 
     if (roll < successRate) {
+      if (scrollIndex >= 0 && scrollIndex < inventory.length) {
+        inventory.splice(scrollIndex, 1);
+      }
       chosenItem.enhance = (chosenItem.enhance || 0) + 1;
       chosenItem.stats = chosenItem.stats || {};
       if (type === "weapon") {
@@ -170,13 +171,24 @@ export async function execute(interaction) {
       } было сломано.`;
 
       if (entry.source === "inventory") {
-        inventory.splice(entry.index, 1);
+        const itemIndex = entry.index;
+        [scrollIndex, itemIndex]
+          .sort((a, b) => b - a)
+          .forEach((i) => {
+            if (i >= 0 && i < inventory.length) {
+              inventory.splice(i, 1);
+            }
+          });
       } else {
         delete equipped[type];
+        if (scrollIndex >= 0 && scrollIndex < inventory.length) {
+          inventory.splice(scrollIndex, 1);
+        }
       }
     }
 
     await duelModel.connect();
+
     const statsColl = duelModel.client.db("SquadJS").collection("mainstats");
 
     await statsColl.updateOne(
