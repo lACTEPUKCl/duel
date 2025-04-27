@@ -56,7 +56,8 @@ function computeHitChance(character) {
   const effAcc = getEffectiveStat(character, "accuracy");
   const main = getMainSkill(character);
   const ratio = main > 0 ? Math.min(effAcc / main, 1) : 0;
-  return 0.3 + 0.6 * ratio;
+  const hitChance = 0.3 + 0.6 * ratio;
+  return Math.max(hitChance, 10);
 }
 
 function computeCritChance(character) {
