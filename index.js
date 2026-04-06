@@ -14,13 +14,16 @@ import { duelModel } from "./models/duel.js";
 import { handleShopSelect } from "./commands/shop.js";
 import { handleButton as handleQuestButton } from "./commands/quest.js";
 import * as farm from "./commands/farm.js";
+import { logger } from "./utils/logger.js";
+import { initScheduler } from "./services/eventScheduler.js";
+import { registerPlayer } from "./services/tournamentService.js";
 dotenv.config();
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 client.commands = new Collection();
 
 await duelModel.connect().catch((err) => {
-  console.error("Failed to connect to MongoDB:", err);
+  logger.error("Failed to connect to MongoDB:", err);
   process.exit(1);
 });
 
@@ -41,32 +44,69 @@ for (const file of commandFiles) {
 
 client.on("interactionCreate", async (interaction) => {
   try {
+    // ─── Slash commands ───
     if (interaction.isCommand()) {
       const command = client.commands.get(interaction.commandName);
       if (command) await command.execute(interaction);
-    } else if (
-      interaction.isButton() &&
-      interaction.customId.startsWith("duel_accept_")
-    ) {
-      await handleDuelAccept(interaction);
-    } else if (interaction.customId.startsWith("duel_cancel_")) {
-      return handleDuelCancel(interaction);
-    } else if (
+      return;
+    }
+
+    // ─── Buttons ───
+    if (interaction.isButton()) {
+      const id = interaction.customId;
+
+      if (id.startsWith("duel_accept_")) {
+        return await handleDuelAccept(interaction);
+      }
+      if (id.startsWith("duel_cancel_")) {
+        return await handleDuelCancel(interaction);
+      }
+      if (
+        id.startsWith("quest_accept") ||
+        id.startsWith("quest_decline") ||
+        id.startsWith("quest_new")
+      ) {
+        return await handleQuestButton(interaction);
+      }
+      if (id.startsWith("farm_")) {
+        return await farm.handleFarmButton(interaction);
+      }
+
+      // ─── Tournament join button ───
+      if (id === "tournament_join") {
+        const member = interaction.guild?.members.cache.get(
+          interaction.user.id
+        );
+        const name = (
+          member?.nickname ||
+          interaction.user.globalName ||
+          interaction.user.username
+        ).slice(0, 16);
+
+        const result = await registerPlayer(interaction.user.id, name);
+        if (result.error) {
+          return interaction.reply({
+            content: `❌ ${result.error}`,
+            flags: MessageFlags.Ephemeral,
+          });
+        }
+        return interaction.reply({
+          content:
+            `✅ Вы зарегистрированы! Участников: **${result.participantCount}** | Призовой фонд: **${result.prizePool}** 💰`,
+          flags: MessageFlags.Ephemeral,
+        });
+      }
+    }
+
+    // ─── Select menus ───
+    if (
       interaction.isStringSelectMenu() &&
       interaction.customId === "shop_buy"
     ) {
-      await handleShopSelect(interaction);
-    } else if (
-      interaction.isButton() &&
-      (interaction.customId.startsWith("quest_accept") ||
-        interaction.customId.startsWith("quest_decline") ||
-        interaction.customId.startsWith("quest_new"))
-    ) {
-      await handleQuestButton(interaction);
-    } else if (interaction.customId.startsWith("farm_"))
-      return farm.handleFarmButton(interaction);
+      return await handleShopSelect(interaction);
+    }
   } catch (error) {
-    console.error("Interaction error:", error);
+    logger.error("Interaction error:", error);
     try {
       if (!interaction.replied && !interaction.deferred) {
         await interaction.reply({
@@ -80,17 +120,22 @@ client.on("interactionCreate", async (interaction) => {
         });
       }
     } catch (err) {
-      console.error("Failed to send error message:", err);
+      logger.error("Failed to send error message:", err);
     }
   }
 });
 
 client.once("ready", () => {
-  console.log(`Бот запущен как ${client.user.tag}`);
+  logger.info(`Бот запущен как ${client.user.tag}`);
+
+  // Очистка просроченных дуэлей
   setInterval(
-    () => duelModel.cleanupExpiredDuels().catch(console.error),
+    () => duelModel.cleanupExpiredDuels().catch((e) => logger.error("Cleanup error:", e)),
     15 * 60 * 1000
   );
+
+  // Инициализация ивент-системы (боссы, турниры)
+  initScheduler(client);
 });
 
 client.login(process.env.CLIENT_TOKEN);

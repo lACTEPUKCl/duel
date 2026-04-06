@@ -3,6 +3,13 @@ import { duelModel } from "../models/duel.js";
 import { checkUserBinding } from "../utils/checkUserBinding.js";
 import { classes } from "../classes/classes.js";
 import { xpThreshold } from "./leveling.js";
+import { getClassDefinition, getMainStatKey } from "../utils/classHelpers.js";
+import {
+  getEffectiveStat,
+  computeHitChance,
+  computeCritChance,
+  getWeaponDamage,
+} from "../utils/combatMath.js";
 
 export const data = new SlashCommandBuilder()
   .setName("profile")
@@ -15,18 +22,6 @@ export const data = new SlashCommandBuilder()
       .setDescription("Укажите пользователя для просмотра его профиля")
       .setRequired(false)
   );
-
-function getClassDefinition(classId) {
-  if (classes[classId]) return classes[classId];
-  for (const baseKey of Object.keys(classes)) {
-    const adv = classes[baseKey].advanced;
-    for (const lvl of Object.keys(adv)) {
-      const found = adv[lvl].find((o) => o.id === classId);
-      if (found) return found;
-    }
-  }
-  return null;
-}
 
 export async function execute(interaction) {
   const targetUser =
@@ -67,50 +62,29 @@ export async function execute(interaction) {
       statMultipliers: {},
       name: classId,
     };
-    const multipliers = classDef.statMultipliers || {};
     const className = classDef.name || classId || "—";
 
-    // Рассчитываем финальные статы
-    const characterStats = { ...stats };
-    delete characterStats.class;
+    // Рассчитываем финальные статы через общую систему
+    const dg = userData.duelGame;
+    const statKeys = ["strength", "agility", "intelligence", "accuracy", "hp", "defense"];
     const finalStats = {};
-    for (const [key, baseVal] of Object.entries(characterStats)) {
-      const base = baseVal || 0;
-      const mult = multipliers[key] || 0;
-      const bonus = Math.floor(base * mult);
-      finalStats[key] = base + bonus;
+    for (const key of statKeys) {
+      finalStats[key] = getEffectiveStat(dg, key);
     }
-    // Бонусы экипировки
+
+    // Параметры боя через общие функции
+    const mainKey = getMainStatKey(classId);
+    const avgDamage = getWeaponDamage(dg);
+    const hitChance = computeHitChance(dg);
+    const critChance = computeCritChance(dg);
+
     const w = typeof equipped.weapon === "object" ? equipped.weapon : {};
     const a = typeof equipped.armor === "object" ? equipped.armor : {};
-    if (finalStats.accuracy !== undefined && w.stats?.accuracyBonus) {
-      finalStats.accuracy += Math.floor(
-        finalStats.accuracy * w.stats.accuracyBonus
-      );
-    }
-    if (finalStats.defense !== undefined && a.stats?.defensePercentBonus) {
-      finalStats.defense += Math.floor(
-        finalStats.defense * a.stats.defensePercentBonus
-      );
-    }
-
-    // Определяем главную стату и рассчитываем параметры боя
-    let mainKey = "strength";
-    const clsLower = (classId || "").toLowerCase();
-    if (clsLower === "mage") mainKey = "intelligence";
-    if (clsLower === "archer") mainKey = "agility";
-    const mainVal = finalStats[mainKey] || 0;
-    const dmgBonus = w.stats?.damagePercentBonus || 0;
-    const avgDamage = mainVal * (1 + dmgBonus);
-    const effAcc = finalStats.accuracy || 0;
-    const ratioHit = mainVal > 0 ? Math.min(effAcc / mainVal, 1) : 0;
-    const hitChance = 0.3 + 0.6 * ratioHit;
-    const ratioCrit = mainVal > 0 ? Math.min(effAcc / mainVal, 1) : 0;
-    const critChance = 0.1 + 0.4 * ratioCrit + (w.stats?.critChanceBonus || 0);
 
     // Формируем поле характеристик
-    const statsField = Object.entries(finalStats)
-      .map(([k, v]) => {
+    const statsField = statKeys
+      .map((k) => {
+        const v = finalStats[k];
         const label = k[0].toUpperCase() + k.slice(1);
         if (k === mainKey) {
           return `**${label}**: ${v} (урон с оружием: ${avgDamage.toFixed(1)})`;

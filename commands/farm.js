@@ -79,6 +79,20 @@ export async function handleFarmButton(interaction) {
           flags: MessageFlags.Ephemeral,
         });
       }
+
+      // Кулдаун 2 часа между сессиями фарма
+      const FARM_COOLDOWN = 2 * 60 * 60 * 1000;
+      const lastFarmEnd = user.duelGame?.lastFarmEnd || 0;
+      if (now - lastFarmEnd < FARM_COOLDOWN) {
+        const remainMin = Math.ceil(
+          (FARM_COOLDOWN - (now - lastFarmEnd)) / 60000
+        );
+        return interaction.reply({
+          content: `⏰ Фарм будет доступен через ${remainMin} мин.`,
+          flags: MessageFlags.Ephemeral,
+        });
+      }
+
       await statsColl.updateOne(
         { discordid: interaction.user.id },
         { $set: { "duelGame.farmStart": now } }
@@ -100,10 +114,15 @@ export async function handleFarmButton(interaction) {
 
       await statsColl.updateOne(
         { discordid: interaction.user.id },
-        { $unset: { "duelGame.farmStart": "" } }
+        {
+          $unset: { "duelGame.farmStart": "" },
+          $set: { "duelGame.lastFarmEnd": now },
+        }
       );
 
-      const elapsedMin = Math.floor((now - farmStart) / 60000);
+      const MAX_FARM_MINUTES = 120;
+      const rawElapsed = Math.floor((now - farmStart) / 60000);
+      const elapsedMin = Math.min(rawElapsed, MAX_FARM_MINUTES);
       const XP_PER_MINUTE = 1;
       const xpGain = elapsedMin * XP_PER_MINUTE;
       const oldLevel = user.duelGame.level || 1;
@@ -121,10 +140,15 @@ export async function handleFarmButton(interaction) {
         levelText = `Ваш уровень остался **${newLevel}**.`;
       }
 
+      const capNote =
+        rawElapsed > MAX_FARM_MINUTES
+          ? `\n⚠️ Максимум фарма — ${MAX_FARM_MINUTES} мин. Вы фармили ${rawElapsed} мин, но XP начислен за ${elapsedMin} мин.`
+          : "";
+
       return interaction.update({
         content:
           `Вы завершили фарм **${elapsedMin}** мин и получили **${xpGain}** XP.\n` +
-          `${levelText} Остаток XP: **${leftoverXp}**, нераспределённых очков: **${unspentPoints}**.`,
+          `${levelText} Остаток XP: **${leftoverXp}**, нераспределённых очков: **${unspentPoints}**.${capNote}`,
         components: [],
         flags: MessageFlags.Ephemeral,
       });

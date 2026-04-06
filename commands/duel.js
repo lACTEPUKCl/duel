@@ -18,40 +18,11 @@ import { duelModel } from "../models/duel.js";
 import { weapons } from "../config/duelConfig.js";
 import { checkUserBinding } from "../utils/checkUserBinding.js";
 import { classes } from "../classes/classes.js";
-
-function getClassDefinition(classId) {
-  if (classes[classId]) return classes[classId];
-  for (const baseKey of Object.keys(classes)) {
-    const adv = classes[baseKey].advanced;
-    for (const lvl of Object.keys(adv)) {
-      const found = adv[lvl].find((o) => o.id === classId);
-      if (found) return found;
-    }
-  }
-  return { statMultipliers: {} };
-}
-
-function getBaseClassId(classId) {
-  if (classes[classId]) return classId;
-  for (const baseKey of Object.keys(classes)) {
-    const adv = classes[baseKey].advanced;
-    for (const lvl of Object.keys(adv)) {
-      if (adv[lvl].some((o) => o.id === classId)) {
-        return baseKey;
-      }
-    }
-  }
-  return "default";
-}
-
-function getEffectiveStat(statsObj, key) {
-  const base = statsObj[key] || 0;
-  const classId = statsObj.class;
-  const classDef = getClassDefinition(classId);
-  const mult = classDef.statMultipliers?.[key] ?? 0;
-  const bonus = Math.floor(base * mult);
-  return base + bonus;
-}
+import {
+  getClassDefinition,
+  getBaseClassId,
+} from "../utils/classHelpers.js";
+import { getEffectiveStat } from "../utils/combatMath.js";
 
 export const data = new SlashCommandBuilder()
   .setName("duel")
@@ -130,15 +101,17 @@ export async function execute(interaction) {
         flags: MessageFlags.Ephemeral,
       });
 
-    const duelStats = challengerData.duelGame.stats || {};
-    const strength = getEffectiveStat(duelStats, "strength");
-    const agility = getEffectiveStat(duelStats, "agility");
-    const intelligence = getEffectiveStat(duelStats, "intelligence");
-    const accuracy = getEffectiveStat(duelStats, "accuracy");
-    const hp = getEffectiveStat(duelStats, "hp");
-    const defense = getEffectiveStat(duelStats, "defense");
-    const level = challengerData.duelGame.level || 1;
-    const className = classes[duelStats.class]?.name || duelStats.class || "—";
+    const dg = challengerData.duelGame;
+    const duelStats = dg.stats || {};
+    const strength = getEffectiveStat(dg, "strength");
+    const agility = getEffectiveStat(dg, "agility");
+    const intelligence = getEffectiveStat(dg, "intelligence");
+    const accuracy = getEffectiveStat(dg, "accuracy");
+    const hp = getEffectiveStat(dg, "hp");
+    const defense = getEffectiveStat(dg, "defense");
+    const level = dg.level || 1;
+    const classDef = getClassDefinition(duelStats.class);
+    const className = classDef.name || duelStats.class || "—";
 
     const rawWeapon = challengerData.duelGame.equipped?.weapon;
     const weaponId = typeof rawWeapon === "string" ? rawWeapon : rawWeapon?.id;

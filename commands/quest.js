@@ -8,6 +8,7 @@ import {
 } from "discord.js";
 import { duelModel } from "../models/duel.js";
 import { checkUserBinding } from "../utils/checkUserBinding.js";
+import { awardXP } from "./leveling.js";
 import { readFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
@@ -134,11 +135,16 @@ export async function execute(interaction) {
     const { xp, loot } = activeQuest.success;
     const dropped = loot.filter((item) => Math.random() <= item.chance);
 
-    const updateOps = { $inc: { "duelGame.xp": xp } };
+    // Начисляем XP через систему левелинга (а не напрямую)
+    await awardXP(interaction.user.id, xp);
+
+    // Добавляем лут отдельно
     if (dropped.length) {
-      updateOps.$push = { "duelGame.inventory": { $each: dropped } };
+      await statsColl.updateOne(
+        { discordid: interaction.user.id },
+        { $push: { "duelGame.inventory": { $each: dropped } } }
+      );
     }
-    await statsColl.updateOne({ discordid: interaction.user.id }, updateOps);
 
     const resultEmbed = new EmbedBuilder()
       .setTitle("Квест завершён!")

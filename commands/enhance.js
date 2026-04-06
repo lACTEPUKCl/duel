@@ -8,29 +8,21 @@ import { duelModel } from "../models/duel.js";
 import { checkUserBinding } from "../utils/checkUserBinding.js";
 
 function getSuccessRate(level) {
-  if (level >= 9) return 0.1;
-  switch (level) {
-    case 0:
-      return 0.9;
-    case 1:
-      return 0.8;
-    case 2:
-      return 0.7;
-    case 3:
-      return 0.6;
-    case 4:
-      return 0.5;
-    case 5:
-      return 0.4;
-    case 6:
-      return 0.3;
-    case 7:
-      return 0.2;
-    case 8:
-      return 0.15;
-    default:
-      return 0.1;
-  }
+  // +0→+1: 90%, +1→+2: 80%, ..., +9→+10: 5%
+  const rates = [0.9, 0.8, 0.7, 0.6, 0.5, 0.35, 0.25, 0.15, 0.1, 0.05];
+  return rates[level] ?? 0.05;
+}
+
+/**
+ * Определяет последствия провала заточки:
+ *  +0..+2: safe — ничего не происходит (только свиток теряется)
+ *  +3..+6: downgrade — уровень падает на 2
+ *  +7..+9: destroy — предмет уничтожается
+ */
+function getFailResult(currentLevel) {
+  if (currentLevel <= 2) return "safe";
+  if (currentLevel <= 6) return "downgrade";
+  return "destroy";
 }
 
 export const data = new SlashCommandBuilder()
@@ -145,15 +137,19 @@ export async function execute(interaction) {
       });
     }
 
-    const successRate = getSuccessRate(chosenItem.enhance || 0);
+    const currentEnhance = chosenItem.enhance || 0;
+    const successRate = getSuccessRate(currentEnhance);
     const roll = Math.random();
     let resultText;
 
+    // Свиток всегда расходуется
+    if (scrollIndex >= 0 && scrollIndex < inventory.length) {
+      inventory.splice(scrollIndex, 1);
+    }
+
     if (roll < successRate) {
-      if (scrollIndex >= 0 && scrollIndex < inventory.length) {
-        inventory.splice(scrollIndex, 1);
-      }
-      chosenItem.enhance = (chosenItem.enhance || 0) + 1;
+      // ═══ УСПЕХ ═══
+      chosenItem.enhance = currentEnhance + 1;
       chosenItem.stats = chosenItem.stats || {};
       if (type === "weapon") {
         chosenItem.stats.damagePercentBonus =
@@ -162,27 +158,52 @@ export async function execute(interaction) {
         chosenItem.stats.defensePercentBonus =
           (chosenItem.stats.defensePercentBonus || 0) + 0.05;
       }
-      resultText = `✅ Успех! Ваше ${
-        type === "weapon" ? "оружие" : "броня"
-      } теперь +${chosenItem.enhance}.`;
+      resultText =
+        `✅ Успех! (шанс ${(successRate * 100).toFixed(0)}%) Ваше ` +
+        `${type === "weapon" ? "оружие" : "броня"} теперь **+${chosenItem.enhance}**.`;
     } else {
-      resultText = `❌ Провал! Ваше ${
-        type === "weapon" ? "оружие" : "броня"
-      } было сломано.`;
+      // ═══ ПРОВАЛ — тип наказания зависит от уровня ═══
+      const failType = getFailResult(currentEnhance);
 
-      if (entry.source === "inventory") {
-        const itemIndex = entry.index;
-        [scrollIndex, itemIndex]
-          .sort((a, b) => b - a)
-          .forEach((i) => {
-            if (i >= 0 && i < inventory.length) {
-              inventory.splice(i, 1);
-            }
-          });
+      if (failType === "safe") {
+        // +0..+2: ничего не теряем, только свиток
+        resultText =
+          `⚠️ Провал! (шанс ${(successRate * 100).toFixed(0)}%) ` +
+          `Свиток израсходован, но предмет цел. (Безопасная зона +0–+2)`;
+      } else if (failType === "downgrade") {
+        // +3..+6: уровень падает на 2
+        const dropTo = Math.max(0, currentEnhance - 2);
+        const lost = currentEnhance - dropTo;
+        chosenItem.enhance = dropTo;
+        // Откатываем статы
+        if (type === "weapon") {
+          chosenItem.stats.damagePercentBonus = Math.max(
+            0,
+            (chosenItem.stats.damagePercentBonus || 0) - 0.05 * lost
+          );
+        } else {
+          chosenItem.stats.defensePercentBonus = Math.max(
+            0,
+            (chosenItem.stats.defensePercentBonus || 0) - 0.05 * lost
+          );
+        }
+        resultText =
+          `⚠️ Провал! (шанс ${(successRate * 100).toFixed(0)}%) ` +
+          `${type === "weapon" ? "Оружие" : "Броня"} понизилось до **+${dropTo}**.`;
       } else {
-        delete equipped[type];
-        if (scrollIndex >= 0 && scrollIndex < inventory.length) {
-          inventory.splice(scrollIndex, 1);
+        // +7..+9: УНИЧТОЖЕНИЕ
+        resultText =
+          `💥 Провал! (шанс ${(successRate * 100).toFixed(0)}%) Ваше ` +
+          `${type === "weapon" ? "оружие" : "броня"} **уничтожено**!`;
+
+        if (entry.source === "equipped") {
+          delete equipped[type];
+        } else {
+          // Удаляем предмет из инвентаря (аккуратно с индексом)
+          const itemIndex = entry.index;
+          if (itemIndex >= 0 && itemIndex < inventory.length) {
+            inventory.splice(itemIndex, 1);
+          }
         }
       }
     }

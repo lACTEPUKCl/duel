@@ -69,16 +69,20 @@ export async function handleShopSelect(interaction) {
     await duelModel.connect();
     const statsColl = duelModel.client.db("SquadJS").collection("mainstats");
 
-    const user = await statsColl.findOne({ discordid: interaction.user.id });
-    if (!user || (user.bonuses || 0) < item.price) {
-      return interaction.followUp({
-        content: `❌ Недостаточно бонусов! Нужно: ${item.price}`,
-        flags: MessageFlags.Ephemeral,
-      });
-    }
-
-    await statsColl.updateOne(
-      { discordid: interaction.user.id },
+    // Атомарная покупка: проверка баланса + списание + добавление в инвентарь за одну операцию
+    const MAX_INVENTORY = 50;
+    const result = await statsColl.findOneAndUpdate(
+      {
+        discordid: interaction.user.id,
+        bonuses: { $gte: item.price },
+        // Ограничение размера инвентаря
+        $expr: {
+          $lt: [
+            { $size: { $ifNull: ["$duelGame.inventory", []] } },
+            MAX_INVENTORY,
+          ],
+        },
+      },
       {
         $inc: { bonuses: -item.price },
         $push: {
@@ -86,19 +90,47 @@ export async function handleShopSelect(interaction) {
             id: item.id,
             name: item.name,
             enhance: 0,
-            stats: { ...item },
+            stats: {
+              damagePercentBonus: item.damagePercentBonus || 0,
+              defensePercentBonus: item.defensePercentBonus || 0,
+              accuracyBonus: item.accuracyBonus || 0,
+              critChanceBonus: item.critChanceBonus || 0,
+            },
           },
         },
-      }
+      },
+      { returnDocument: "after" }
     );
 
-    const updated = await statsColl.findOne({ discordid: interaction.user.id });
+    if (!result.value) {
+      // Определяем причину отказа
+      const user = await statsColl.findOne({
+        discordid: interaction.user.id,
+      });
+      if (!user || (user.bonuses || 0) < item.price) {
+        return interaction.followUp({
+          content: `❌ Недостаточно бонусов! Нужно: ${item.price}, у вас: ${
+            user?.bonuses || 0
+          }`,
+          flags: MessageFlags.Ephemeral,
+        });
+      }
+      return interaction.followUp({
+        content: `❌ Инвентарь полон (макс. ${MAX_INVENTORY} предметов)!`,
+        flags: MessageFlags.Ephemeral,
+      });
+    }
+
     const embed = new EmbedBuilder()
       .setColor(0x00ff00)
       .setTitle(`✅ Куплено: ${item.name}`)
       .addFields(
         { name: "Цена", value: `${item.price} бонусов`, inline: true },
-        { name: "Баланс", value: `${updated.bonuses}`, inline: true },
+        {
+          name: "Баланс",
+          value: `${result.value.bonuses}`,
+          inline: true,
+        },
         { name: "Эффект", value: item.stats, inline: false }
       );
 

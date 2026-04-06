@@ -25,24 +25,37 @@ export async function execute(interaction) {
 
     const level = userDoc.duelGame.level || 1;
 
+    // Авто-рост HP и defense из leveling (с учётом капов)
+    const { LEVEL_UP_AUTO_STATS, STAT_CAPS, PROGRESSION } = await import(
+      "../config/balanceConfig.js"
+    );
+    const autoHp = Math.min(
+      100 + (level - 1) * LEVEL_UP_AUTO_STATS.hp,
+      STAT_CAPS.hp
+    );
+    const autoDef = Math.min(
+      10 + (level - 1) * LEVEL_UP_AUTO_STATS.defense,
+      STAT_CAPS.defense
+    );
+
     const defaultStats = {
       strength: 10,
       agility: 10,
       intelligence: 10,
       accuracy: 10,
-      hp: 100 + (level - 1) * 10,
-      defense: 10 + (level - 1) * 2,
-      class: "novice",
+      hp: autoHp,
+      defense: autoDef,
+      class: userDoc.duelGame.stats.class || "novice",
     };
 
-    const unspentPoints = level * 5;
+    const unspentPoints = level * PROGRESSION.pointsPerLevel;
 
     await statsColl.updateOne(
       { discordid: interaction.user.id },
       {
         $set: {
           "duelGame.stats": defaultStats,
-          "duelGame.unspentPoints": level * 5,
+          "duelGame.unspentPoints": unspentPoints,
         },
       }
     );

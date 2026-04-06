@@ -40,7 +40,18 @@ export async function execute(interaction) {
         value: "Вызвать игрока на дуэль с возможной ставкой бонусов",
       },
       { name: "/quest", value: "Получить задание и отправиться на квест" },
-      { name: "/farm", value: "Встать на фарм опыта" },
+      { name: "/farm", value: "Встать на фарм опыта (макс. 2 часа)" },
+      { name: "/daily", value: "Получить ежедневную награду (серия бонусов)" },
+      { name: "/dailyquests", value: "Ежедневные задания (3 штуки, бонус за все)" },
+      { name: "/craft", value: "Создать предмет из материалов" },
+      { name: "/attack_boss", value: "Атаковать текущего мини-босса" },
+      { name: "/tournament join", value: "Зарегистрироваться на турнир" },
+      { name: "/tournament status", value: "Статус текущего турнира" },
+      { name: "/titles", value: "Ваши титулы и достижения" },
+      {
+        name: "/leaderboard",
+        value: "Таблица лидеров (уровень / победы / винрейт)",
+      },
       { name: "/info", value: "Показать это сообщение" }
     )
     .setFooter({ text: "Используйте команды с / (слэш), например: /profile" });

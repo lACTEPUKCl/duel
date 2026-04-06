@@ -1,9 +1,12 @@
 import { duelModel } from "../models/duel.js";
-
-const BASE_XP_THRESHOLD = 500;
+import {
+  PROGRESSION,
+  LEVEL_UP_AUTO_STATS,
+  STAT_CAPS,
+} from "../config/balanceConfig.js";
 
 export function xpThreshold(level) {
-  return BASE_XP_THRESHOLD * level;
+  return PROGRESSION.baseXpThreshold * level;
 }
 
 export async function awardXP(discordId, xpAmount) {
@@ -25,9 +28,18 @@ export async function awardXP(discordId, xpAmount) {
   while (currentXP >= xpThreshold(currentLevel)) {
     currentXP -= xpThreshold(currentLevel);
     currentLevel += 1;
-    newUnspentPoints += 5;
-    autoHp += 10;
-    autoDef += 2;
+    newUnspentPoints += PROGRESSION.pointsPerLevel;
+
+    // Авто-рост HP и защиты — с учётом капов
+    if (autoHp < STAT_CAPS.hp) {
+      autoHp = Math.min(autoHp + LEVEL_UP_AUTO_STATS.hp, STAT_CAPS.hp);
+    }
+    if (autoDef < STAT_CAPS.defense) {
+      autoDef = Math.min(
+        autoDef + LEVEL_UP_AUTO_STATS.defense,
+        STAT_CAPS.defense
+      );
+    }
   }
 
   await statsColl.updateOne(

@@ -73,6 +73,7 @@ export async function execute(interaction) {
       level: 1,
       xp: 0,
       unspentPoints: 5,
+      createdAt: new Date(),
       stats: {
         strength: 10,
         agility: 10,
@@ -82,7 +83,18 @@ export async function execute(interaction) {
         defense: 10,
         class: chosenClass,
       },
-      duels: { wins: 0, losses: 0 },
+      duels: { wins: 0, losses: 0, winStreak: 0, bestStreak: 0 },
+      equipped: {},
+      inventory: [],
+      activeEffects: {},
+      activeQuest: null,
+      lastQuestFinished: null,
+      questsCompleted: 0,
+      farmStart: null,
+      lastFarmEnd: null,
+      totalFarmMinutes: 0,
+      cooldowns: { duel: 0, daily: 0, enhance: 0 },
+      dailyStreak: 0,
     };
 
     await duelModel.connect();
