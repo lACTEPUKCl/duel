@@ -14,13 +14,13 @@ import {
 export const data = new SlashCommandBuilder()
   .setName("profile")
   .setDescription(
-    "Показать информацию о вашем персонаже или другого пользователя"
+    "Показать информацию о вашем персонаже или другого пользователя",
   )
   .addUserOption((option) =>
     option
       .setName("пользователь")
       .setDescription("Укажите пользователя для просмотра его профиля")
-      .setRequired(false)
+      .setRequired(false),
   );
 
 export async function execute(interaction) {
@@ -66,7 +66,14 @@ export async function execute(interaction) {
 
     // Рассчитываем финальные статы через общую систему
     const dg = userData.duelGame;
-    const statKeys = ["strength", "agility", "intelligence", "accuracy", "hp", "defense"];
+    const statKeys = [
+      "strength",
+      "agility",
+      "intelligence",
+      "accuracy",
+      "hp",
+      "defense",
+    ];
     const finalStats = {};
     for (const key of statKeys) {
       finalStats[key] = getEffectiveStat(dg, key);
@@ -91,7 +98,7 @@ export async function execute(interaction) {
         }
         if (k === "accuracy") {
           return `**${label}**: ${v} (меткость: ${(hitChance * 100).toFixed(
-            0
+            0,
           )}% крит шанс: ${(critChance * 100).toFixed(0)}%)`;
         }
         return `**${label}**: ${v}`;
@@ -125,15 +132,15 @@ export async function execute(interaction) {
         {
           name: "Бонусы экипировки",
           value:
-            `**Урон**: +${(dmgBonus * 100).toFixed(0)}%\n` +
+            `**Урон**: +${((w.stats?.damagePercentBonus || 0) * 100).toFixed(0)}%\n` +
             `**Крит шанс**: +${(w.stats?.critChanceBonus * 100 || 0).toFixed(
-              0
+              0,
             )}%\n` +
             `**Точность**: +${(w.stats?.accuracyBonus * 100 || 0).toFixed(
-              0
+              0,
             )}%\n` +
             `**Защита**: +${(a.stats?.defensePercentBonus * 100 || 0).toFixed(
-              0
+              0,
             )}%`,
           inline: false,
         },
@@ -153,7 +160,7 @@ export async function execute(interaction) {
             return `🏆 Победы: ${wins}   ❌ Поражения: ${losses}   📊 Винрейт: ${winrate}`;
           })(),
           inline: false,
-        }
+        },
       )
       .setThumbnail(targetUser.displayAvatarURL({ size: 128 }));
 
