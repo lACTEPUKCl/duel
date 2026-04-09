@@ -2,6 +2,7 @@ import {
   spawnBoss,
   getCurrentBoss,
   createBossSpawnEmbed,
+  createBossAttackRow,
   SPAWN_INTERVAL,
 } from "./bossService.js";
 import {
@@ -48,7 +49,8 @@ async function scheduleBoss() {
     if (!channel) return;
 
     const embed = createBossSpawnEmbed(boss);
-    await channel.send({ embeds: [embed] });
+    const row = createBossAttackRow();
+    await channel.send({ embeds: [embed], components: [row] });
 
     logger.info(`[SCHEDULER] Boss spawned: ${boss.name}`);
   } catch (err) {

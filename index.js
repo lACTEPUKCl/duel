@@ -10,6 +10,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import dotenv from "dotenv";
 import { handleDuelAccept } from "./commands/duelGame.js";
 import { handleDuelCancel } from "./commands/duel.js";
+import { handleBossAttack } from "./commands/attack_boss.js";
 import { duelModel } from "./models/duel.js";
 import { handleShopSelect } from "./commands/shop.js";
 import { handleButton as handleQuestButton } from "./commands/quest.js";
@@ -72,7 +73,17 @@ client.on("interactionCreate", async (interaction) => {
         return await farm.handleFarmButton(interaction);
       }
 
-      // ─── Tournament join button ───
+      // ─── Boss attack button ───
+      if (id === "boss_attack") {
+        return await handleBossAttack(interaction, true);
+      }
+
+      // ─── Menu buttons ───
+      if (id.startsWith("menu_")) {
+        const { handleMenuButton } = await import("./commands/menu.js");
+        return await handleMenuButton(interaction);
+      }
+
       if (id === "tournament_join") {
         const member = interaction.guild?.members.cache.get(
           interaction.user.id
@@ -99,11 +110,14 @@ client.on("interactionCreate", async (interaction) => {
     }
 
     // ─── Select menus ───
-    if (
-      interaction.isStringSelectMenu() &&
-      interaction.customId === "shop_buy"
-    ) {
-      return await handleShopSelect(interaction);
+    if (interaction.isStringSelectMenu()) {
+      if (interaction.customId === "shop_buy") {
+        return await handleShopSelect(interaction);
+      }
+      if (interaction.customId === "menu_category") {
+        const { handleMenuSelect } = await import("./commands/menu.js");
+        return await handleMenuSelect(interaction);
+      }
     }
   } catch (error) {
     logger.error("Interaction error:", error);

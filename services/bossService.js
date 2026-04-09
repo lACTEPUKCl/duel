@@ -1,4 +1,4 @@
-import { EmbedBuilder } from "discord.js";
+import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from "discord.js";
 import { duelModel } from "../models/duel.js";
 import { getMainStat, getWeaponDamage, getEffectiveStat } from "../utils/combatMath.js";
 import { rollMaterialDrop } from "../config/craftingData.js";
@@ -190,15 +190,27 @@ export async function distributeBossRewards(killerDiscordId) {
  */
 export function createBossSpawnEmbed(boss) {
   const hpBar = makeHpBar(boss.currentHp, boss.maxHp);
-  return new EmbedBuilder()
+  const embed = new EmbedBuilder()
     .setColor(0xff4444)
     .setTitle(`${boss.name} появился!`)
     .setDescription(
       `HP: ${hpBar} **${boss.currentHp}/${boss.maxHp}**\n\n` +
-      `Используйте \`/attack_boss\` чтобы атаковать!\n` +
       `💰 Награда: ${boss.minReward}–${boss.maxReward} бонусов + материалы\n` +
       `⚡ Кулдаун атаки: 30 сек`
     );
+  return embed;
+}
+
+/**
+ * Кнопка атаки босса (для embed'а спавна и обновлений)
+ */
+export function createBossAttackRow() {
+  return new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setCustomId("boss_attack")
+      .setLabel("⚔️ Атаковать!")
+      .setStyle(ButtonStyle.Danger)
+  );
 }
 
 /**
