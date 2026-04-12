@@ -70,7 +70,7 @@ export async function handleShopSelect(interaction) {
     const statsColl = duelModel.client.db("SquadJS").collection("mainstats");
 
     // Атомарная покупка: проверка баланса + списание + добавление в инвентарь за одну операцию
-    const MAX_INVENTORY = 50;
+    const MAX_INVENTORY = 500;
     const result = await statsColl.findOneAndUpdate(
       {
         discordid: interaction.user.id,
